@@ -1,0 +1,29 @@
+'use client';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { formatPrice, whatsappUrl } from '@/lib/utils/format';
+import { etaFor } from '@/lib/config/delivery';
+
+export default function OrderConfirmed() {
+  const [o, setO] = useState(undefined);
+  useEffect(() => { try { setO(JSON.parse(sessionStorage.getItem('veltrix_last_order')) || null); } catch { setO(null); } }, []);
+  if (o === undefined) return <div className="skeleton" style={{ height: 240 }} aria-busy="true" />;
+  if (!o) return <div className="empty"><h2 style={{ fontSize: 'var(--fs-xl)' }}>No recent order found</h2><p>If you just placed an order, check your email for the confirmation.</p><Link className="btn" href="/products">Continue shopping</Link></div>;
+  const wa = whatsappUrl(`Hello VELTRIX, I placed order #${o.number} (${formatPrice(o.total)}, cash on delivery) for delivery to ${o.address.first_name} ${o.address.last_name || ''} in ${o.address.city}. Please confirm.`);
+  return (
+    <div className="confirm stack">
+      <div className="alert alert--success" role="status">Order placed. Your order number is <strong>#{o.number}</strong>.</div>
+      <p>We sent the details to {o.email}. Please keep your phone nearby and have the amount ready for the courier.</p>
+      <ul className="mini">{o.items.map((i, n) => <li key={n}><span>{i.title}{i.variant && !/^default/i.test(i.variant) ? ` (${i.variant})` : ''} x {i.qty}</span><span>{formatPrice(i.total)}</span></li>)}</ul>
+      <dl className="summary">
+        <div><dt>Subtotal</dt><dd>{formatPrice(o.subtotal)}</dd></div>
+        {o.discount_total > 0 && <div className="summary__disc"><dt>Discount</dt><dd>-{formatPrice(o.discount_total)}</dd></div>}
+        <div><dt>Delivery</dt><dd>{formatPrice(o.shipping_total)}</dd></div>
+        <div className="summary__total"><dt>Total to pay on delivery</dt><dd>{formatPrice(o.total)}</dd></div>
+      </dl>
+      <p>Estimated delivery to {o.address.city}: {etaFor(o.address.city)}.</p>
+      <p><strong>Delivering to:</strong> {o.address.first_name} {o.address.last_name}, {o.address.address_1}, {o.address.city}. {o.address.phone}</p>
+      <div className="row">{wa && <a className="btn btn--gold" href={wa} target="_blank" rel="noopener noreferrer">Confirm on WhatsApp</a>}<Link className="btn btn--ghost" href="/products">Continue shopping</Link></div>
+    </div>
+  );
+}

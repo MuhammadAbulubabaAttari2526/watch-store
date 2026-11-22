@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "npm --prefix storefront run build"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8"
+  }
+}

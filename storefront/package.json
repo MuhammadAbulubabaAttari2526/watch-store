@@ -1,0 +1,27 @@
+{
+  "name": "veltrix-storefront",
+  "private": true,
+  "version": "0.6.1",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "node scripts/check-setup.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.12",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.9",
+    "@playwright/test": "^1.49.1"
+  }
+}
