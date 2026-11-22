@@ -1,61 +1,77 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { request } from '@/lib/api/client';
-import { listProducts, searchProducts } from '@/lib/api/store';
-import { toCart, toProduct } from '@/lib/api/mappers';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { rpc, from } = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
+vi.mock('@/lib/supabase/server', () => ({
+  getSupabaseServer: () => ({ rpc, from }),
+}));
+
+import { searchProducts } from '@/lib/api/store';
+import { toCart, toOrder, toProduct } from '@/lib/api/mappers';
+import { formatPrice } from '@/lib/utils/format';
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
 });
 
-describe('store API client', () => {
-  it('sends product filters as query parameters to the configured API', async () => {
-    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.test');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ items: [{ id: 'watch-1', slug: 'classic-watch', title: 'Classic Watch' }], total: 1, page: 1, pages: 1 }),
-    }));
+beforeEach(() => {
+  rpc.mockReset();
+  from.mockReset();
+});
 
-    const products = await listProducts({ limit: 6, category: 'classic' });
-    expect(products[0]).toMatchObject({ id: 'watch-1', handle: 'classic-watch', title: 'Classic Watch' });
-    const [url] = fetch.mock.calls[0];
-    expect(new URL(url).origin).toBe('https://api.example.test');
-    expect(new URL(url).pathname).toBe('/api/products');
-    expect(new URL(url).searchParams.get('limit')).toBe('6');
-    expect(new URL(url).searchParams.get('category')).toBe('classic');
-  });
-
-  it('maps custom backend product, variant, image, and collection fields for the storefront', () => {
-    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.test');
-    const product = toProduct({
-      id: 'watch-1',
-      slug: 'classic-watch',
-      title: 'Classic Watch',
-      brand: 'VELTRIX',
-      caseMaterial: 'Steel',
-      images: [{ id: 'image-1', url: '/uploads/watch.jpg' }],
-      collections: [{ id: 'collection-1', name: 'Classics', slug: 'classics' }],
-      variants: [{
-        id: 'variant-1',
-        title: 'Steel',
-        price: '45000',
-        salePrice: '36000',
-        options: { strap: 'Steel', color: 'Black' },
-        inventory: { quantity: 2 },
-      }],
+describe('Supabase store data access', () => {
+  it('passes storefront filters to the product search RPC and maps its product rows', async () => {
+    rpc.mockResolvedValue({
+      data: {
+        items: [{
+          id: 'watch-1',
+          slug: 'classic-watch',
+          title: 'Classic Watch',
+          brand: 'VELTRIX',
+          case_material: 'Steel',
+          images: [{ id: 'image-1', url: 'https://storage.example.test/watch.jpg', position: 0 }],
+          collections: [{ id: 'collection-1', name: 'Classics', slug: 'classics' }],
+          variants: [{
+            id: 'variant-1',
+            title: 'Steel',
+            price: 45000,
+            salePrice: 36000,
+            isActive: true,
+            options: { strap: 'Steel', color: 'Black' },
+            inventory: { quantity: 2 },
+          }],
+        }],
+        total: 1,
+        page: 1,
+        pages: 1,
+      },
+      error: null,
     });
 
-    expect(product).toMatchObject({
+    const result = await searchProducts({
+      q: 'classic', sort: 'price-asc', min: 10000, max: 50000, color: 'Gold', strap: 'Steel',
+    });
+
+    expect(rpc).toHaveBeenCalledWith('search_products', {
+      p_page: 1,
+      p_limit: 12,
+      p_search: 'classic',
+      p_category: null,
+      p_collection: null,
+      p_min: 10000,
+      p_max: 50000,
+      p_color: 'Gold',
+      p_strap: 'Steel',
+      p_sort: 'price-asc',
+    });
+    expect(result.items[0]).toMatchObject({
+      id: 'watch-1',
       handle: 'classic-watch',
       subtitle: 'VELTRIX',
-      thumbnail: 'https://api.example.test/uploads/watch.jpg',
+      thumbnail: 'https://storage.example.test/watch.jpg',
       price: 36000,
       original: 45000,
-      discount: 20,
       collection: { handle: 'classics', title: 'Classics' },
       metadata: { case_material: 'Steel' },
-      options: [{ id: 'strap', title: 'Strap', values: ['Steel'] }, { id: 'color', title: 'Color', values: ['Black'] }],
       variants: [{ id: 'variant-1', price: 36000, original: 45000, quantity: 2, available: true }],
     });
   });
@@ -82,37 +98,45 @@ describe('store API client', () => {
     });
   });
 
-  it('passes storefront search, price, and option filters to the custom API', async () => {
-    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.test');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ items: [], total: 0, page: 1, pages: 0 }),
-    }));
-
-    await searchProducts({ q: 'classic', sort: 'price-asc', min: 10000, max: 50000, color: 'Gold', strap: 'Steel' });
-    const url = new URL(fetch.mock.calls[0][0]);
-    expect(url.searchParams.get('search')).toBe('classic');
-    expect(url.searchParams.get('sort')).toBe('price-asc');
-    expect(url.searchParams.get('min')).toBe('10000');
-    expect(url.searchParams.get('max')).toBe('50000');
-    expect(url.searchParams.get('color')).toBe('Gold');
-    expect(url.searchParams.get('strap')).toBe('Steel');
+  it('reports database failures instead of returning an empty catalog', async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
+    await expect(searchProducts()).rejects.toThrow('Could not search products: permission denied');
   });
 
-  it('fails clearly when no API URL is configured', async () => {
-    vi.stubEnv('NEXT_PUBLIC_API_URL', '');
-    await expect(request('/api/products')).rejects.toThrow(/NEXT_PUBLIC_API_URL/);
+  it('maps product variants and leaves absolute Supabase Storage URLs intact', () => {
+    const product = toProduct({
+      id: 'watch-1',
+      slug: 'classic-watch',
+      title: 'Classic Watch',
+      images: [{ id: 'image-1', url: 'https://storage.example.test/watch.jpg' }],
+      variants: [{
+        id: 'variant-1',
+        title: 'Steel',
+        price: '45000',
+        salePrice: '36000',
+        isActive: true,
+        options: { strap: 'Steel' },
+        inventory: { quantity: 2 },
+      }],
+    });
+
+    expect(product.thumbnail).toBe('https://storage.example.test/watch.jpg');
+    expect(product.variants[0]).toMatchObject({ price: 36000, original: 45000, quantity: 2, available: true });
   });
 
-  it('preserves the HTTP status when the API returns an error', async () => {
-    vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.example.test');
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      status: 503,
-      json: async () => ({ message: 'Unavailable' }),
-    }));
+  it('preserves order currencies and formats storefront prices with the configured unit', () => {
+    const order = toOrder({
+      orderNumber: 'VLX-260101-ABC123',
+      currencyCode: 'USD',
+      status: 'PENDING',
+      subtotal: '2500',
+      total: '2500',
+      items: [],
+      payments: [],
+    });
 
-    await expect(request('/api/products')).rejects.toMatchObject({ message: 'Unavailable', status: 503 });
+    expect(order.currencyCode).toBe('USD');
+    expect(formatPrice(2500, order.currencyCode)).toContain('$');
+    expect(formatPrice(2500, 'PKR')).toBe('Rs 2,500');
   });
 });

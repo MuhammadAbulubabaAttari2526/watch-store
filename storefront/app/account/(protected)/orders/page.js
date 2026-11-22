@@ -21,7 +21,7 @@ export default async function Page({ searchParams }) {
             {data.orders.map((o) => (
               <li key={o.id}><Link href={`/account/orders/${o.id}`} className="orders__row">
                 <span><strong>Order #{o.display_id}</strong><small>{new Date(o.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}</small></span>
-                <span className="badge badge--muted">{label(o)}</span><span className="price">{formatPrice(o.total)}</span>
+                <span className="badge badge--muted">{label(o)}</span><span className="price">{formatPrice(o.total, o.currencyCode)}</span>
               </Link></li>
             ))}
           </ul>

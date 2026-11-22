@@ -22,7 +22,7 @@ export default function ProductGallery({ images, title }) {
   return (
     <div className="gallery">
       <button type="button" className="gallery__main" onMouseMove={move} onClick={() => setZoom(true)} aria-label="Open larger image">
-        <img src={cur.url} alt={`${title}, view ${i + 1} of ${images.length}`} width="900" height="1125" fetchPriority="high" decoding="async" />
+        <img key={cur.id || cur.url} src={cur.url} alt={`${title}, view ${i + 1} of ${images.length}`} width="900" height="1125" fetchPriority="high" decoding="async" />
       </button>
       {images.length > 1 && (
         <ul className="gallery__thumbs">

@@ -13,12 +13,12 @@ export default function Dial() {
   }, []);
   // Hands start at 12 on every render, then jump to the visitor's real time once mounted.
   const s = now ? deg(now.getSeconds()) : 0;
-  const m = now ? now.getMinutes() * 6 + now.getSeconds() / 10 : 0;
-  const h = now ? (now.getHours() % 12) * 30 + now.getMinutes() / 2 : 0;
+  const m = now ? Number((now.getMinutes() * 6 + now.getSeconds() / 10).toFixed(3)) : 0;
+  const h = now ? Number(((now.getHours() % 12) * 30 + now.getMinutes() / 2).toFixed(3)) : 0;
   function deg(x) { return x * 6; }
   const ticks = Array.from({ length: 60 }, (_, i) => {
     const major = i % 5 === 0, a = (i * 6 * Math.PI) / 180, r1 = 178, r2 = major ? 160 : 169;
-    return <line key={i} x1={200 + r1 * Math.sin(a)} y1={200 - r1 * Math.cos(a)} x2={200 + r2 * Math.sin(a)} y2={200 - r2 * Math.cos(a)}
+    return <line key={i} x1={Number((200 + r1 * Math.sin(a)).toFixed(3))} y1={Number((200 - r1 * Math.cos(a)).toFixed(3))} x2={Number((200 + r2 * Math.sin(a)).toFixed(3))} y2={Number((200 - r2 * Math.cos(a)).toFixed(3))}
       stroke={major ? '#C5A46D' : '#8a8374'} strokeWidth={major ? 2.5 : 1} />;
   });
   const numerals = [['XII', 200, 132], ['III', 268, 208], ['VI', 200, 284], ['IX', 132, 208]];

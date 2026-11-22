@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCart } from './CartProvider';
 import { useAuth } from './AuthProvider';
 import { placeOrderAction } from '@/lib/auth/actions';
@@ -11,6 +11,7 @@ import * as api from '@/lib/api/cart';
 import { formatPrice } from '@/lib/utils/format';
 import { normalizePkPhone, PK_CITIES } from '@/lib/utils/phone';
 import { etaFor, optionsForCity } from '@/lib/config/delivery';
+import { useStoreCurrency } from './StoreProvider';
 
 const EMPTY = { name: '', email: '', phone: '', address: '', city: '', postal: '', notes: '' };
 
@@ -18,6 +19,7 @@ export default function CheckoutForm() {
   const router = useRouter();
   const { cart, items, ready, clearCart, busy } = useCart();
   const customer = useAuth();
+  const currency = useStoreCurrency();
   const [f, setF] = useState(EMPTY);
   const [errs, setErrs] = useState({});
   const [options, setOptions] = useState(null);
@@ -25,6 +27,7 @@ export default function CheckoutForm() {
   const [setup, setSetup] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [fail, setFail] = useState(null);
+  const idempotencyKey = useRef(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   // Signed-in customers get their details filled in; they can still edit everything.
@@ -90,7 +93,8 @@ export default function CheckoutForm() {
     try {
       const [first, ...rest] = f.name.trim().split(/\s+/);
       const order = await placeOrderAction({
-        cartId: cart.id,
+        idempotencyKey: idempotencyKey.current || (idempotencyKey.current = crypto.randomUUID()),
+        items: items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
         contactEmail: f.email.trim(),
         paymentMethod: 'COD',
         discountCode: cart.discount?.code,
@@ -105,12 +109,20 @@ export default function CheckoutForm() {
           phone: normalizePkPhone(f.phone),
         },
       });
+      idempotencyKey.current = null;
       const o = order;
       try {
         sessionStorage.setItem('veltrix_last_order', JSON.stringify({
-          id: o.id, number: o.orderNumber, email: o.contactEmail, total: Number(o.total), shipping_total: Number(o.shippingTotal),
+          id: o.id, number: o.orderNumber, email: o.contactEmail || f.email.trim(), currency: o.currencyCode || currency,
+          total: Number(o.total), shipping_total: Number(o.shippingTotal),
           discount_total: Number(o.discountTotal), subtotal: Number(o.subtotal), notes: o.orderNotes,
-          address: { first_name: o.shippingFirstName, last_name: o.shippingLastName, address_1: o.shippingAddress1, city: o.shippingCity, phone: o.shippingPhone },
+          address: {
+            first_name: o.shippingFirstName || f.name.trim().split(/\s+/)[0],
+            last_name: o.shippingLastName || f.name.trim().split(/\s+/).slice(1).join(' '),
+            address_1: o.shippingAddress1 || f.address.trim(),
+            city: o.shippingCity || f.city.trim(),
+            phone: o.shippingPhone || normalizePkPhone(f.phone),
+          },
           items: (o.items || []).map((i) => ({ title: i.productTitle, variant: i.variantTitle, qty: i.quantity, total: Number(i.lineTotal) })),
         }));
       } catch {}
@@ -157,7 +169,7 @@ export default function CheckoutForm() {
           {visible?.map((o) => (
             <label key={o.id} className={'choice' + (shipId === o.id ? ' is-on' : '')}>
               <input type="radio" name="ship" checked={shipId === o.id} onChange={() => chooseShipping(o.id)} />
-              <span>{o.name}</span><strong>{formatPrice(api.optionPrice(o))}</strong>
+              <span>{o.name}</span><strong>{formatPrice(api.optionPrice(o), currency)}</strong>
             </label>
           ))}
           {f.city.trim().length > 1 ? <p className="eta">Estimated delivery to {f.city.trim()}: {etaFor(f.city)}.</p> : <p className="eta">Enter your city to see delivery options and timing for it.</p>}
@@ -171,7 +183,7 @@ export default function CheckoutForm() {
 
       <aside className="checkout__side stack">
         <h2 style={{ fontSize: 'var(--fs-xl)' }}>Order summary</h2>
-        <ul className="mini">{items.map((i) => <li key={i.id}><span>{i.product_title || i.title}{i.variant_title && !/^default/i.test(i.variant_title) ? ` (${i.variant_title})` : ''} x {i.quantity}</span><span>{formatPrice(i.total)}</span></li>)}</ul>
+        <ul className="mini">{items.map((i) => <li key={i.id}><span>{i.product_title || i.title}{i.variant_title && !/^default/i.test(i.variant_title) ? ` (${i.variant_title})` : ''} x {i.quantity}</span><span>{formatPrice(i.total, currency)}</span></li>)}</ul>
         <CouponForm />
         <CartSummary cart={cart} shippingChosen={!!selectedOption} shippingAmount={selectedOption ? api.optionPrice(selectedOption) : undefined} />
         {fail && <div className="alert alert--error" role="alert">{fail}</div>}

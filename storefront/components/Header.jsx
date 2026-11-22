@@ -26,7 +26,7 @@ const MenuIcon = ({ open }) => (
   </svg>
 );
 
-export default function Header() {
+export default function Header({ settings = {} }) {
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const { count, openDrawer } = useCart();
@@ -43,7 +43,11 @@ export default function Header() {
           <MenuIcon open={open} />
           <span className="menu-btn__label" aria-hidden="true">{open ? 'Close' : 'Menu'}</span>
         </button>
-        <Link className="logo" href="/" aria-label="VELTRIX home">VELTRIX</Link>
+        <Link className="logo" href="/" aria-label={`${settings.store_name || 'VELTRIX'} home`}>
+          {settings.store_logo_url
+            ? <img src={settings.store_logo_url} alt={settings.store_name || 'VELTRIX'} width="140" height="42" style={{ objectFit: 'contain' }} />
+            : settings.store_name || 'VELTRIX'}
+        </Link>
         <nav id="nav" className={'nav' + (open ? ' is-open' : '')} aria-label="Main">
           {LINKS.map(([label, href]) => <Link key={href} href={href} onClick={() => setOpen(false)}>{label}</Link>)}
         </nav>

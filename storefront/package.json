@@ -12,16 +12,18 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.2",
     "next": "^14.2.15",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.12",
     "jsdom": "^25.0.1",
-    "vitest": "^2.1.9",
-    "@playwright/test": "^1.49.1"
+    "vitest": "^2.1.9"
   }
 }

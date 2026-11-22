@@ -16,8 +16,16 @@ const MOTION_TARGETS = [
   'main .newsletter__heading',
   'main .newsletter__form',
   'main .filters',
+  'main .results-count',
+  'main .pagination',
   'main .gallery',
+  'main .gallery__thumbs > li',
   'main .pdp__info',
+  'main .specs > div',
+  'main .mini > li',
+  'main .track > li',
+  'main .recent__grid > a',
+  'main .coupon__list > li',
   'main .cart-layout',
   'main .checkout',
   'main .auth',
@@ -26,7 +34,8 @@ const MOTION_TARGETS = [
   'main .box',
   'main .orders__row',
   'main .addr',
-  'main .line',
+  '.line',
+  '.suggest > li',
   'footer .footer__brand',
   'footer .footer__nav-wrap',
 ].join(',');
@@ -37,8 +46,7 @@ export default function MotionEffects() {
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const targets = document.querySelectorAll(MOTION_TARGETS);
-    if (!targets.length || !('IntersectionObserver' in window)) return;
+    if (!('IntersectionObserver' in window)) return;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -48,14 +56,36 @@ export default function MotionEffects() {
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' });
 
-    targets.forEach((element) => {
-      const index = Array.prototype.indexOf.call(element.parentElement.children, element);
-      element.style.setProperty('--motion-delay', `${(index % 4) * 90}ms`);
-      element.classList.add('motion-in');
-      observer.observe(element);
-    });
+    const observeTargets = (root) => {
+      const targets = [];
+      if (root instanceof Element && root.matches(MOTION_TARGETS)) targets.push(root);
+      if (root.querySelectorAll) targets.push(...root.querySelectorAll(MOTION_TARGETS));
 
-    return () => observer.disconnect();
+      targets.forEach((element) => {
+        if (element.classList.contains('motion-in')) return;
+        const index = element.parentElement
+          ? Array.prototype.indexOf.call(element.parentElement.children, element)
+          : 0;
+        element.style.setProperty('--motion-delay', `${(index % 4) * 90}ms`);
+        element.classList.add('motion-in');
+        observer.observe(element);
+      });
+    };
+
+    observeTargets(document);
+    const mutations = new MutationObserver((records) => {
+      records.forEach((record) => {
+        record.addedNodes.forEach((node) => {
+          if (node instanceof Element) observeTargets(node);
+        });
+      });
+    });
+    mutations.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      mutations.disconnect();
+      observer.disconnect();
+    };
   }, [pathname]);
 
   return null;

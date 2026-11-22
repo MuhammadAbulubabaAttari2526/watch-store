@@ -4,14 +4,15 @@ import ProductRail from '@/components/ProductRail';
 import BrandStory from '@/components/BrandStory';
 import WhyChoose from '@/components/WhyChoose';
 import Newsletter from '@/components/Newsletter';
-import { listProducts } from '@/lib/api/store';
+import { listBanners, listProducts } from '@/lib/api/store';
 
 export const dynamic = 'force-dynamic';
 
-export default function Home() {
+export default async function Home() {
+  const banners = await listBanners();
   return (
     <>
-      <Hero />
+      <Hero banner={banners[0]} />
       <Collections />
       <ProductRail id="featured" title="Featured watches" load={() => listProducts({ limit: 4 })}
         empty="No watches yet. Add products in Medusa Admin and they will appear here." />

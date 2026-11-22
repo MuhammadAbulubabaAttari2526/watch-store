@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { formatPrice } from '@/lib/utils/format';
+import { useStoreCurrency } from './StoreProvider';
 
 export default function ProductPurchase({ product, whatsapp }) {
   const options = product.options.filter((o) => o.values.length > 1);
@@ -12,6 +13,7 @@ export default function ProductPurchase({ product, whatsapp }) {
   const [working, setWorking] = useState(false);
   const router = useRouter();
   const { addItem } = useCart();
+  const currency = useStoreCurrency();
 
   // Options with a single value are chosen for the customer.
   const fixed = useMemo(() => Object.fromEntries(product.options.filter((o) => o.values.length === 1).map((o) => [o.id, o.values[0]])), [product]);
@@ -43,7 +45,7 @@ export default function ProductPurchase({ product, whatsapp }) {
     <div className="stack">
       <div className={'price price--lg' + (original ? ' price--sale' : '')} aria-live="polite">
         {!variant && from != null && <span className="price__from">From</span>}
-        {shown != null ? formatPrice(shown) : 'Price on request'}{original && <s>{formatPrice(original)}</s>}
+        {shown != null ? formatPrice(shown, currency) : 'Price on request'}{original && <s>{formatPrice(original, currency)}</s>}
       </div>
 
       {options.map((o) => (

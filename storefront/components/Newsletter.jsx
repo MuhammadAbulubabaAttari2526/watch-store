@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { request } from '@/lib/api/client';
+import { getSupabaseBrowser } from '@/lib/supabase/client';
 
 export default function Newsletter() {
   const [email, setEmail] = useState('');
@@ -10,9 +10,10 @@ export default function Newsletter() {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setMsg({ type: 'error', text: 'Enter a valid email address.' });
     try {
-      await request('/api/newsletter', { method: 'POST', body: { email } });
+      const { error } = await getSupabaseBrowser().rpc('subscribe_newsletter', { p_email: email });
+      if (error) throw new Error(error.message);
       setMsg({ type: 'success', text: 'You are subscribed.' }); setEmail('');
-    } catch (error) { setMsg({ type: 'error', text: error.message }); }
+    } catch (error) { setMsg({ type: 'error', text: `Could not subscribe: ${error.message}` }); }
   }
   return (
     <section className="section newsletter" aria-labelledby="nl-t">

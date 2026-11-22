@@ -1,54 +1,101 @@
-// Server-only helpers keep the backend session token in an httpOnly cookie.
-import { cookies } from 'next/headers';
-import { request } from '@/lib/api/client';
+import { getSupabaseServer } from '@/lib/supabase/server';
 import { toOrder } from '@/lib/api/mappers';
 
-export const COOKIE = 'veltrix_customer';
-export const COOKIE_OPTS = { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 7 };
-
-export const getToken = () => cookies().get(COOKIE)?.value || null;
-
-export const api = (method, path, options = {}) =>
-  request(path, { ...options, method, token: options.token ?? getToken() });
-
-const toAddress = (address) => ({
+const mapAddress = (address) => ({
   ...address,
   address_name: address.label,
-  first_name: address.firstName,
-  last_name: address.lastName,
-  address_1: address.addressLine1,
-  address_2: address.addressLine2,
-  postal_code: address.postalCode,
-  is_default_shipping: address.isDefault,
+  first_name: address.first_name,
+  last_name: address.last_name,
+  address_1: address.address_line1,
+  address_2: address.address_line2,
+  postal_code: address.postal_code,
+  is_default_shipping: address.is_default,
 });
 
+function mapOrder(order) {
+  return {
+    ...order,
+    orderNumber: order.order_number,
+    customerId: order.customer_id,
+    contactEmail: order.contact_email,
+    orderNotes: order.order_notes,
+    paymentMethod: order.payment_method,
+    currencyCode: order.currency_code,
+    discountTotal: order.discount_total,
+    shippingTotal: order.shipping_total,
+    discountId: order.discount_id,
+    shippingFirstName: order.shipping_first_name,
+    shippingLastName: order.shipping_last_name,
+    shippingAddress1: order.shipping_address1,
+    shippingAddress2: order.shipping_address2,
+    shippingCity: order.shipping_city,
+    shippingRegion: order.shipping_region,
+    shippingPostalCode: order.shipping_postal_code,
+    shippingCountryCode: order.shipping_country_code,
+    shippingPhone: order.shipping_phone,
+    createdAt: order.created_at,
+    updatedAt: order.updated_at,
+    items: (order.order_items || []).map((item) => ({
+      ...item,
+      productTitle: item.product_title,
+      variantTitle: item.variant_title,
+      unitPrice: item.unit_price,
+      lineTotal: item.line_total,
+    })),
+    payments: order.payments || [],
+  };
+}
+
 export async function getCustomer() {
-  if (!getToken()) return null;
-  try {
-    const { customer } = await api('GET', '/api/auth/me');
-    return {
-      ...customer,
-      first_name: customer.firstName,
-      last_name: customer.lastName,
-      addresses: (customer.addresses || []).map(toAddress),
-    };
-  } catch (error) {
-    if (error.status === 401 || error.status === 404) return null;
-    throw error;
+  const supabase = getSupabaseServer();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError?.name === 'AuthSessionMissingError' ||
+      authError?.message?.toLowerCase().includes('auth session missing')) {
+    return null;
   }
+  if (authError) throw new Error(`Could not verify customer session: ${authError.message}`);
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*,addresses(*)')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load customer profile: ${error.message}`);
+  if (!data || data.status !== 'ACTIVE') return null;
+  return {
+    ...data,
+    email: user.email,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    addresses: (data.addresses || []).map(mapAddress),
+  };
 }
 
 export async function listOrders(page = 1, limit = 10) {
-  const { orders = [] } = await api('GET', '/api/orders/me');
-  const all = orders.map(toOrder);
+  const supabase = getSupabaseServer();
+  const start = (page - 1) * limit;
+  const { data, count, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*),payments(*)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(start, start + limit - 1);
+  if (error) throw new Error(`Could not load orders: ${error.message}`);
+  const total = count || 0;
   return {
-    orders: all.slice((page - 1) * limit, page * limit),
-    count: all.length,
-    pages: Math.max(1, Math.ceil(all.length / limit)),
+    orders: (data || []).map((order) => toOrder(mapOrder(order))),
+    count: total,
+    pages: Math.max(1, Math.ceil(total / limit)),
   };
 }
 
 export async function getOrder(id) {
-  try { return toOrder((await api('GET', `/api/orders/me/${encodeURIComponent(id)}`)).order); }
-  catch (error) { if (error.status === 404) return null; throw error; }
+  const supabase = getSupabaseServer();
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*,order_items(*),payments(*),order_timeline(*)')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load order: ${error.message}`);
+  return data ? toOrder(mapOrder(data)) : null;
 }

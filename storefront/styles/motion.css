@@ -98,11 +98,42 @@
 .product-card:hover .product-card__media img { transform: scale(1.055); }
 .product-card__name { transition: color 220ms var(--ease); }
 .product-card:hover .product-card__name { color: var(--accent-text); }
+.product-card__body { transition: transform 320ms var(--ease); }
+.product-card:hover .product-card__body { transform: translateY(-2px); }
 .why-item__icon { transition: transform 350ms var(--ease), background-color 350ms var(--ease), box-shadow 350ms var(--ease); }
 .why-item:hover .why-item__icon { transform: translateY(-4px) rotate(-4deg); background: #fbf8f2; box-shadow: 0 10px 24px rgba(16, 16, 16, .1); }
 .footer__nav a span { transition: transform 220ms var(--ease); }
 .footer__nav a:hover span { transform: translateX(5px); }
 .wa-fab { animation: wa-pulse 3s ease-in-out 2s infinite; }
+.link-btn, .acc summary, .qty button, .choice, .orders__row, .gallery__thumbs button, .modal__close {
+  transition: color 220ms var(--ease), background-color 220ms var(--ease), border-color 220ms var(--ease), transform 220ms var(--ease), box-shadow 220ms var(--ease), opacity 220ms var(--ease);
+}
+.link-btn:hover { color: var(--accent-text); }
+.qty button:hover:not(:disabled), .gallery__thumbs button:hover { transform: translateY(-2px); }
+.gallery__thumbs button { overflow: hidden; transition: border-color 220ms var(--ease), opacity 220ms var(--ease), transform 220ms var(--ease); }
+.gallery__thumbs img { transition: transform 350ms var(--ease); }
+.gallery__thumbs button:hover img { transform: scale(1.06); }
+.gallery__thumbs button[aria-current="true"] { box-shadow: 0 0 0 1px var(--gold); }
+.gallery__main img { animation: gallery-image-in 400ms var(--ease) both; }
+.input { transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease), background-color 180ms var(--ease); }
+.input:focus-visible { border-color: var(--gold-deep); box-shadow: 0 0 0 3px rgba(197, 164, 109, .18); outline: none; }
+.choice:hover { border-color: var(--gold-deep); }
+.acc summary { transition: color 200ms var(--ease); }
+.acc summary:hover { color: var(--accent-text); }
+.acc[open] > :not(summary) { animation: content-reveal 320ms var(--ease) both; }
+.pagination a { transition: transform 220ms var(--ease), color 220ms var(--ease), background-color 220ms var(--ease), border-color 220ms var(--ease); }
+.pagination a:hover { transform: translateY(-2px); }
+.modal { animation: modal-backdrop-in 260ms ease both; }
+.modal__panel { animation: modal-panel-in 420ms var(--ease) both; }
+.modal--top .search-box { animation: search-panel-in 420ms var(--ease) both; }
+.modal__close:hover { color: var(--accent-text); transform: rotate(90deg); }
+.drawer.is-open .drawer__head { animation: drawer-content-in 380ms 60ms var(--ease) both; }
+.drawer.is-open .drawer__body { animation: drawer-content-in 420ms 100ms var(--ease) both; }
+.drawer.is-open .drawer__foot { animation: drawer-content-in 420ms 150ms var(--ease) both; }
+.newsletter__icon { transition: transform 300ms var(--ease), background-color 300ms var(--ease), border-color 300ms var(--ease); }
+.newsletter__icon:hover { transform: translateY(-3px) rotate(-5deg); background: #fbf8f2; border-color: var(--gold); }
+.newsletter__submit span { display: inline-block; transition: transform 220ms var(--ease); }
+.newsletter__submit:hover span { transform: translateX(5px); }
 
 @keyframes hero-copy-in {
   from { opacity: 0; transform: translateY(18px); }
@@ -111,6 +142,30 @@
 @keyframes hero-cta-in {
   from { opacity: 0; clip-path: inset(0 100% 0 0); }
   to { opacity: 1; clip-path: inset(0); }
+}
+@keyframes gallery-image-in {
+  from { opacity: .55; filter: blur(2px); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes search-panel-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes drawer-content-in {
+  from { opacity: .75; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes content-reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes header-in {
   from { opacity: 0; transform: translateY(-12px); }

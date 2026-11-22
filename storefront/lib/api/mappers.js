@@ -1,12 +1,6 @@
-const apiOrigin = () => {
-  try { return new URL(process.env.NEXT_PUBLIC_API_URL).origin; }
-  catch { return ''; }
-};
-
 export function assetUrl(value) {
   if (!value || /^https?:\/\//i.test(value)) return value || null;
-  const origin = apiOrigin();
-  return origin ? new URL(value, `${origin}/`).href : value;
+  return value;
 }
 
 function optionEntries(value) {
@@ -128,6 +122,7 @@ export function toOrder(order) {
   return {
     ...order,
     display_id: order.orderNumber,
+    currencyCode: order.currencyCode ?? order.currency_code ?? 'PKR',
     created_at: order.createdAt,
     status,
     fulfillment_status: fulfillment,

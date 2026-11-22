@@ -25,7 +25,7 @@ button { cursor: pointer; }
 .skip-link:focus { top: var(--sp-4); }
 .stack > * + * { margin-top: var(--stack, var(--sp-4)); }
 .motion-in {
-  opacity: 0;
+  opacity: 1;
   transform: translate3d(0, 24px, 0) scale(.99);
   transition: opacity 700ms var(--ease), transform 700ms var(--ease);
   transition-delay: var(--motion-delay, 0ms);

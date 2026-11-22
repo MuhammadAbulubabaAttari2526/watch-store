@@ -2,8 +2,10 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { formatPrice } from '@/lib/utils/format';
+import { useStoreCurrency } from './StoreProvider';
 
 export default function QuickView({ product: p }) {
+  const currency = useStoreCurrency();
   const [open, setOpen] = useState(false);
   const closeRef = useRef(null);
   useEffect(() => {
@@ -23,7 +25,7 @@ export default function QuickView({ product: p }) {
             <div className="modal__media">{p.thumbnail ? <img src={p.thumbnail} alt={p.title} /> : <div className="ph">No image yet</div>}</div>
             <div className="modal__body stack">
               <h3>{p.title}</h3>
-              {p.price != null && <div className={'price' + (p.onSale ? ' price--sale' : '')}>{formatPrice(p.price)}{p.onSale && <s>{formatPrice(p.original)}</s>}</div>}
+              {p.price != null && <div className={'price' + (p.onSale ? ' price--sale' : '')}>{formatPrice(p.price, currency)}{p.onSale && <s>{formatPrice(p.original, currency)}</s>}</div>}
               {p.description && <p>{p.description}</p>}
               <Link className="btn" href={`/products/${p.handle}`}>View details</Link>
             </div>

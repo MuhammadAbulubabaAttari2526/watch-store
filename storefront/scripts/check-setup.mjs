@@ -10,18 +10,30 @@ for (const file of ['.env.local', '.env']) {
   }
 }
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-if (!apiUrl) {
-  console.log('Store API is not configured. The storefront UI can run, but live store features need a replacement API.');
-  process.exit(0);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabaseKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '').trim();
+const issues = [];
+
+if (!supabaseUrl) {
+  issues.push('Set NEXT_PUBLIC_SUPABASE_URL in storefront/.env.local.');
+} else {
+  try {
+    const parsed = new URL(supabaseUrl);
+    if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') {
+      issues.push('NEXT_PUBLIC_SUPABASE_URL must use HTTPS outside local development.');
+    }
+  } catch {
+    issues.push('NEXT_PUBLIC_SUPABASE_URL must be a valid URL.');
+  }
 }
 
-try {
-  const parsed = new URL(apiUrl);
-  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Use an HTTP or HTTPS URL.');
-  console.log('Store API URL is configured.');
-  console.log('Run the custom backend on the configured address to enable live store features.');
-} catch (error) {
-  console.error(`Invalid NEXT_PUBLIC_API_URL: ${error.message}`);
+if (!supabaseKey || /YOUR_|REPLACE/i.test(supabaseKey)) {
+  issues.push('Set NEXT_PUBLIC_SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).');
+}
+
+if (issues.length) {
+  issues.forEach((issue) => console.error(`- ${issue}`));
   process.exitCode = 1;
+} else {
+  console.log('Supabase public configuration is present.');
 }

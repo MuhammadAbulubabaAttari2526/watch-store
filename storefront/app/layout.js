@@ -13,10 +13,11 @@ import Footer from '@/components/Footer';
 import CartProvider from '@/components/CartProvider';
 import CartDrawer from '@/components/CartDrawer';
 import AuthProvider from '@/components/AuthProvider';
-import CartLinker from '@/components/CartLinker';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import MotionEffects from '@/components/MotionEffects';
+import StoreProvider from '@/components/StoreProvider';
 import { getCustomer } from '@/lib/auth/server';
+import { getPublicStoreSettings } from '@/lib/api/store';
 import { SITE_URL } from '@/lib/utils/format';
 
 export const metadata = {
@@ -29,7 +30,7 @@ export const metadata = {
 export const viewport = { themeColor: '#101010' };
 
 export default async function RootLayout({ children }) {
-  const c = await getCustomer();
+  const [c, settings] = await Promise.all([getCustomer(), getPublicStoreSettings()]);
   const customer = c ? { id: c.id, email: c.email, first_name: c.first_name, last_name: c.last_name, phone: c.phone, addresses: (c.addresses || []).map((a) => ({ id: a.id, address_1: a.address_1, city: a.city, postal_code: a.postal_code, is_default_shipping: a.is_default_shipping })) } : null;
   return (
     <html lang="en">
@@ -39,19 +40,20 @@ export default async function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body>
+        <StoreProvider currency={settings.currency || 'PKR'}>
         <AuthProvider customer={customer}>
         <CartProvider>
           <MotionEffects />
-          <CartLinker />
           <a className="skip-link" href="#main">Skip to content</a>
-          <AnnouncementBar />
-          <Header />
+          <AnnouncementBar settings={settings} />
+          <Header settings={settings} />
           <main id="main">{children}</main>
-          <Footer />
+          <Footer settings={settings} />
           <CartDrawer />
-          <WhatsAppButton />
+          <WhatsAppButton settings={settings} />
         </CartProvider>
         </AuthProvider>
+        </StoreProvider>
       </body>
     </html>
   );

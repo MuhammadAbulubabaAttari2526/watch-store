@@ -1,4 +1,4 @@
-const apiOrigin = (() => { try { return new URL(process.env.NEXT_PUBLIC_API_URL || '').origin; } catch { return ''; } })();
+const supabaseOrigin = (() => { try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').origin; } catch { return ''; } })();
 const prod = process.env.NODE_ENV === 'production';
 
 // Browser security rules. Production only, because the dev server needs looser rules.
@@ -8,8 +8,8 @@ const csp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  `img-src 'self' data: blob: https: ${apiOrigin}`,
-  `connect-src 'self' ${apiOrigin}`,
+  "img-src 'self' data: blob: https:",
+  `connect-src 'self' ${supabaseOrigin}`,
   "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'", "object-src 'none'",
 ].join('; ');
 

@@ -1,31 +1,60 @@
 import Link from 'next/link';
 import { adminApi, requireAdmin } from '@/lib/admin/server';
-import { adminLogoutAction } from '@/lib/admin/actions';
+import { adminLogoutAction, updateOrderStatusAction, updateProductStatusAction } from '@/lib/admin/actions';
+import StoreSettingsForm from '@/components/admin/StoreSettingsForm';
+import BannerManager from '@/components/admin/BannerManager';
+import TaxonomyManager from '@/components/admin/TaxonomyManager';
+import DiscountManager from '@/components/admin/DiscountManager';
+import CustomerStatusForm from '@/components/admin/CustomerStatusForm';
+import ReviewStatusForm from '@/components/admin/ReviewStatusForm';
+import { formatPrice } from '@/lib/utils/format';
 
 export const metadata = { title: 'Admin dashboard | VELTRIX', robots: { index: false } };
 
-const money = (value) => `Rs ${Number(value || 0).toLocaleString('en-PK')}`;
+const money = (value, currency = 'PKR') => formatPrice(Number(value || 0), currency);
 const date = (value) => value ? new Intl.DateTimeFormat('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : '-';
 const name = (customer) => [customer?.firstName, customer?.lastName].filter(Boolean).join(' ') || customer?.email || 'Guest';
 
-async function loadDashboard(tab) {
+async function loadDashboard(tab, searchParams) {
   const overview = await adminApi('GET', '/api/admin/analytics/overview');
   let orders = null;
   let products = null;
-  if (tab === 'orders') orders = await adminApi('GET', '/api/admin/orders', { params: { limit: 50 } });
+  let settings = null;
+  let customers = null;
+  let reviews = null;
+  let inventory = null;
+  if (tab === 'orders') orders = await adminApi('GET', '/api/admin/orders', {
+    params: { limit: 50, status: searchParams.status, search: searchParams.q },
+  });
   if (tab === 'products') products = await adminApi('GET', '/api/admin/products', { params: { limit: 50 } });
-  return { overview, orders, products };
+  if (tab === 'settings') settings = await adminApi('GET', '/api/admin/settings');
+  if (tab === 'customers') customers = await adminApi('GET', '/api/admin/customers', {
+    params: { limit: 50, status: searchParams.status, search: searchParams.q },
+  });
+  if (tab === 'reviews') reviews = await adminApi('GET', '/api/admin/reviews', {
+    params: { limit: 100, status: searchParams.status },
+  });
+  if (tab === 'inventory') inventory = await adminApi('GET', '/api/admin/inventory/history');
+  return { overview, orders, products, settings, customers, reviews, inventory };
 }
 
 export default async function Page({ searchParams }) {
   const admin = await requireAdmin();
-  const tab = ['overview', 'orders', 'products'].includes(searchParams.tab) ? searchParams.tab : 'overview';
-  const { overview, orders, products } = await loadDashboard(tab);
+  const tab = ['overview', 'orders', 'products', 'customers', 'reviews', 'inventory', 'settings'].includes(searchParams.tab) ? searchParams.tab : 'overview';
+  const { overview, orders, products, settings, customers, reviews, inventory } = await loadDashboard(tab, searchParams);
   const nav = [
     ['overview', 'Overview'],
     ['orders', 'Orders'],
     ['products', 'Products'],
+    ['customers', 'Customers'],
+    ['reviews', 'Reviews'],
+    ['inventory', 'Inventory history'],
+    ['settings', 'Store settings'],
   ];
+  const headings = {
+    overview: 'Dashboard', orders: 'Orders', products: 'Products', customers: 'Customers',
+    reviews: 'Reviews', inventory: 'Inventory history', settings: 'Store settings',
+  };
 
   return (
     <main className="admin-shell">
@@ -49,7 +78,7 @@ export default async function Page({ searchParams }) {
         <header className="admin-topbar">
           <div>
             <p>VELTRIX Administration</p>
-            <h1>{tab === 'overview' ? 'Dashboard' : tab === 'orders' ? 'Orders' : 'Products'}</h1>
+            <h1>{headings[tab]}</h1>
           </div>
           <Link className="admin-store-link" href="/">View store</Link>
         </header>
@@ -57,7 +86,9 @@ export default async function Page({ searchParams }) {
         {tab === 'overview' && (
           <>
             <div className="admin-metrics">
-              <article><span>Revenue</span><strong>{money(overview.totalRevenue)}</strong><small>{overview.completedOrders} completed orders</small></article>
+              <article><span>Revenue</span><strong>{overview.totalRevenueByCurrency?.length
+                ? overview.totalRevenueByCurrency.map(({ currency, total }) => money(total, currency)).join(' · ')
+                : money(0)}</strong><small>{overview.completedOrders} completed orders</small></article>
               <article><span>Orders</span><strong>{overview.totalOrders}</strong><small>{overview.pendingOrders} pending</small></article>
               <article><span>Customers</span><strong>{overview.totalCustomers}</strong><small>Registered accounts</small></article>
               <article><span>Products</span><strong>{overview.totalProducts}</strong><small>{overview.lowStock?.length || 0} low stock</small></article>
@@ -84,16 +115,22 @@ export default async function Page({ searchParams }) {
         {tab === 'orders' && (
           <article className="admin-panel">
             <div className="admin-panel__head"><h2>All orders</h2><span>{orders?.total || 0} total</span></div>
+            <form method="get" className="admin-panel__head">
+              <input type="hidden" name="tab" value="orders" />
+              <label className="field">Search orders<input className="input" type="search" name="q" defaultValue={searchParams.q || ''} placeholder="Order number or email" /></label>
+              <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option>{['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].map((status) => <option key={status}>{status}</option>)}</select></label>
+              <button className="btn btn--ghost" type="submit">Filter</button>
+            </form>
             <OrderTable items={orders?.items || []} />
           </article>
         )}
 
         {tab === 'products' && (
           <article className="admin-panel">
-            <div className="admin-panel__head"><h2>Catalog</h2><span>{products?.total || 0} products</span></div>
+            <div className="admin-panel__head"><h2>Catalog</h2><span>{products?.total || 0} products <Link className="btn btn--ghost" href="/admin/products/new">Add product</Link></span></div>
             <div className="admin-table-wrap">
               <table className="admin-table">
-                <thead><tr><th>Product</th><th>Brand</th><th>Status</th><th>Stock</th><th>Updated</th></tr></thead>
+                <thead><tr><th>Product</th><th>Brand</th><th>Status</th><th>Stock</th><th>Updated</th><th>Manage</th></tr></thead>
                 <tbody>
                   {(products?.items || []).map((product) => {
                     const stock = (product.variants || []).reduce((sum, variant) => sum + (variant.inventory?.quantity || 0), 0);
@@ -104,6 +141,15 @@ export default async function Page({ searchParams }) {
                         <td><StatusBadge value={product.status} /></td>
                         <td>{stock}</td>
                         <td>{date(product.updatedAt)}</td>
+                        <td><Link className="link-btn" href={`/admin/products/${encodeURIComponent(product.id)}`}>Edit</Link>{' '}
+                          <form action={updateProductStatusAction} style={{ display: 'inline-flex', gap: 8 }}>
+                            <input type="hidden" name="id" value={product.id} />
+                            <select className="input" aria-label={`Set status for ${product.title}`} name="status" defaultValue={product.status}>
+                              {['DRAFT', 'PUBLISHED', 'ARCHIVED'].map((status) => <option key={status}>{status}</option>)}
+                            </select>
+                            <button className="link-btn" type="submit">Save status</button>
+                          </form>
+                        </td>
                       </tr>
                     );
                   })}
@@ -111,6 +157,87 @@ export default async function Page({ searchParams }) {
               </table>
             </div>
           </article>
+        )}
+        {tab === 'customers' && (
+          <article className="admin-panel">
+            <div className="admin-panel__head"><h2>Customer accounts</h2><span>{customers?.total || 0} total</span></div>
+            <form method="get" className="admin-panel__head">
+              <input type="hidden" name="tab" value="customers" />
+              <label className="field">Search customers<input className="input" type="search" name="q" defaultValue={searchParams.q || ''} placeholder="Name or email" /></label>
+              <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option><option>ACTIVE</option><option>DISABLED</option></select></label>
+              <button className="btn btn--ghost" type="submit">Filter</button>
+            </form>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead><tr><th>Customer</th><th>Phone</th><th>Orders</th><th>Joined</th><th>Status</th><th>Manage</th></tr></thead>
+                <tbody>
+                  {(customers?.items || []).map((customer) => (
+                    <tr key={customer.id}>
+                      <td><Link href={`/admin/customers/${encodeURIComponent(customer.id)}`}><strong>{[customer.first_name, customer.last_name].filter(Boolean).join(' ') || customer.email}</strong></Link><small>{customer.email}</small></td>
+                      <td>{customer.phone || '-'}</td><td>{customer.order_count}</td><td>{date(customer.created_at)}</td>
+                      <td><StatusBadge value={customer.status} /></td>
+                      <td><CustomerStatusForm customer={{ id: customer.id, status: customer.status }} /></td>
+                    </tr>
+                  ))}
+                  {!customers?.items?.length && <tr><td className="admin-empty" colSpan={6}>No customers found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        )}
+        {tab === 'reviews' && (
+          <article className="admin-panel stack">
+            <div className="admin-panel__head"><h2>Review moderation</h2></div>
+            <form method="get" className="admin-panel__head">
+              <input type="hidden" name="tab" value="reviews" />
+              <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option>{['PENDING', 'APPROVED', 'REJECTED'].map((status) => <option key={status}>{status}</option>)}</select></label>
+              <button className="btn btn--ghost" type="submit">Filter</button>
+            </form>
+            {(reviews?.items || []).map((review) => (
+              <article className="admin-panel stack" key={review.id}>
+                <div className="admin-panel__head">
+                  <div><h3>{review.title || `Review for ${review.product?.title || 'product'}`}</h3>
+                    <small>{review.customer ? `${review.customer.first_name} ${review.customer.last_name} · ${review.customer.email}` : 'Customer unavailable'} · {date(review.created_at)}</small>
+                  </div>
+                  <StatusBadge value={review.status} />
+                </div>
+                <p>{review.rating}/5 · {review.product?.title || 'Product removed'}</p>
+                <p>{review.body}</p>
+                <ReviewStatusForm review={review} />
+              </article>
+            ))}
+            {!reviews?.items?.length && <p className="admin-empty">No reviews found.</p>}
+          </article>
+        )}
+        {tab === 'inventory' && (
+          <article className="admin-panel">
+            <div className="admin-panel__head"><h2>Recent stock activity</h2><span>Latest 200 entries</span></div>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead><tr><th>Date</th><th>Product / SKU</th><th>Type</th><th>Change</th><th>Note</th><th>Actor</th></tr></thead>
+                <tbody>
+                  {(inventory?.items || []).map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{date(entry.created_at)}</td>
+                      <td>{entry.variant?.product?.title || 'Product removed'}<small>{entry.variant_sku}</small></td>
+                      <td>{entry.type}</td><td>{entry.change > 0 ? `+${entry.change}` : entry.change}</td>
+                      <td>{entry.note || '-'}</td>
+                      <td>{entry.user ? [entry.user.first_name, entry.user.last_name].filter(Boolean).join(' ') || entry.user.email : 'System / legacy'}</td>
+                    </tr>
+                  ))}
+                  {!inventory?.items?.length && <tr><td className="admin-empty" colSpan={6}>No inventory activity recorded.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        )}
+        {tab === 'settings' && (
+          <div className="stack">
+            <StoreSettingsForm settings={settings?.settings} />
+            <TaxonomyManager categories={settings?.categories} collections={settings?.collections} />
+            <DiscountManager discounts={settings?.discounts} />
+            <BannerManager banners={settings?.banners} />
+          </div>
         )}
       </section>
     </main>
@@ -125,18 +252,25 @@ function OrderTable({ items, compact = false }) {
   return (
     <div className="admin-table-wrap">
       <table className="admin-table">
-        <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
+        <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th><th>Date</th>{!compact && <th>Update status</th>}</tr></thead>
         <tbody>
           {items.map((order) => (
             <tr key={order.id}>
-              <td><strong>{order.orderNumber}</strong>{compact && <small>{order.items?.length || 0} items</small>}</td>
+              <td><Link href={`/admin/orders/${encodeURIComponent(order.id)}`}><strong>{order.orderNumber}</strong></Link>{compact && <small>{order.items?.length || 0} items</small>}</td>
               <td>{name(order.customer)}</td>
               <td><StatusBadge value={order.status} /></td>
-              <td>{money(order.total)}</td>
+              <td>{money(order.total, order.currencyCode)}</td>
               <td>{date(order.createdAt)}</td>
+              {!compact && <td><form action={updateOrderStatusAction} style={{ display: 'inline-flex', gap: 8 }}>
+                <input type="hidden" name="id" value={order.id} />
+                <select className="input" name="status" aria-label={`Update order ${order.orderNumber}`} defaultValue={order.status}>
+                  {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].map((status) => <option key={status}>{status}</option>)}
+                </select>
+                <button className="link-btn" type="submit">Save</button>
+              </form></td>}
             </tr>
           ))}
-          {!items.length && <tr><td colSpan="5" className="admin-empty">No orders yet.</td></tr>}
+          {!items.length && <tr><td colSpan={compact ? 5 : 6} className="admin-empty">No orders yet.</td></tr>}
         </tbody>
       </table>
     </div>

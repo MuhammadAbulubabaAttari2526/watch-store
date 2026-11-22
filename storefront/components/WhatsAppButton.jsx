@@ -1,7 +1,7 @@
 import { whatsappUrl } from '@/lib/utils/format';
 
-export default function WhatsAppButton() {
-  const href = whatsappUrl();
+export default function WhatsAppButton({ settings = {} }) {
+  const href = whatsappUrl(`Hello ${settings.store_name || 'VELTRIX'}, I have a question.`, settings.whatsapp_number);
   if (!href) return null;
   return (
     <a className="wa-fab" href={href} target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">
