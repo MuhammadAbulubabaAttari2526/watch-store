@@ -13,7 +13,7 @@ export default function AdminLoginForm() {
       <Field className="admin-login__email" name="email" label="Admin email" type="email" autoComplete="email" />
       <Field className="admin-login__password" name="password" label="Password" type="password" autoComplete="current-password" />
       <Submit className="btn--block admin-login__submit">Sign in to dashboard <span aria-hidden="true">→</span></Submit>
-      <Link className="admin-login__forgot" href="/account/forgot-password">Forgot your password?</Link>
+      <Link className="admin-login__forgot" href="/account/forgot-password?next=%2Fadmin%2Flogin">Forgot your password?</Link>
     </form>
   );
 }

@@ -370,6 +370,23 @@ body.admin-ui main#main {
   text-decoration: none;
 }
 
+.admin-security {
+  max-width: 48rem;
+}
+
+.admin-security__body {
+  padding: 1.25rem;
+}
+
+.admin-security__body > p {
+  color: var(--admin-muted);
+}
+
+.admin-security-form {
+  max-width: 36rem;
+  --stack: 1rem;
+}
+
 .admin-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

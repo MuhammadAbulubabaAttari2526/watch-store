@@ -7,7 +7,7 @@ import { normalizePkPhone } from '@/lib/utils/phone';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const text = (fd, key) => String(fd.get(key) ?? '').trim();
-const safeNext = (next) => (next && next.startsWith('/') && !next.startsWith('//') ? next : '/account');
+const safeNext = (next, fallback = '/account') => (next && next.startsWith('/') && !next.startsWith('//') ? next : fallback);
 const authError = (error) => error.message || 'The request could not be completed. Please try again.';
 
 export async function loginAction(_prev, fd) {
@@ -59,7 +59,13 @@ export async function logoutAction() {
 export async function forgotPasswordAction(_prev, fd) {
   const email = text(fd, 'email').toLowerCase();
   if (!EMAIL.test(email)) return { errors: { email: 'Enter a valid email address.' } };
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/account/reset-password`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const returnTo = safeNext(text(fd, 'next'), '/account/login');
+  const resetPage = new URL('/account/reset-password', siteUrl);
+  resetPage.searchParams.set('returnTo', returnTo);
+  const callback = new URL('/auth/callback', siteUrl);
+  callback.searchParams.set('next', `${resetPage.pathname}${resetPage.search}`);
+  const redirectTo = callback.toString();
   const { error } = await getSupabaseServer().auth.resetPasswordForEmail(email, { redirectTo });
   if (error) return { message: `Could not send the reset link: ${error.message}` };
   return { ok: 'If an account exists for that email, we have sent a reset link.' };
@@ -69,6 +75,7 @@ export async function resetPasswordAction(_prev, fd) {
   const code = text(fd, 'code');
   const tokenHash = text(fd, 'token_hash');
   const recovery = text(fd, 'recovery') === '1';
+  const returnTo = safeNext(text(fd, 'return_to'), '/account/login');
   const password = String(fd.get('password') || '');
   if (!code && !tokenHash && !recovery) return { message: 'This reset link is not valid. Request a new one.' };
   if (password.length < 8) return { errors: { password: 'Use at least 8 characters.' } };
@@ -85,7 +92,7 @@ export async function resetPasswordAction(_prev, fd) {
   }
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { message: `Could not update your password: ${error.message}` };
-  redirect('/account/login?reset=1');
+  redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}reset=1`);
 }
 
 export async function updateProfileAction(_prev, fd) {

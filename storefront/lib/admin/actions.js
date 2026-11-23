@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabasePasswordVerifier, getSupabaseServer } from '@/lib/supabase/server';
 import { requireAdmin } from './server';
 
 const text = (fd, key) => String(fd.get(key) ?? '').trim();
@@ -34,6 +34,34 @@ export async function adminLogoutAction() {
   const { error } = await getSupabaseServer().auth.signOut();
   if (error) throw new Error(`Could not sign out: ${error.message}`);
   redirect('/admin/login');
+}
+
+export async function changeAdminPasswordAction(_prev, fd) {
+  const admin = await requireAdmin();
+  const currentPassword = String(fd.get('current_password') ?? '');
+  const newPassword = String(fd.get('new_password') ?? '');
+  const confirmPassword = String(fd.get('confirm_password') ?? '');
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { message: 'Enter your current password and the new password twice.' };
+  }
+  if (newPassword.length < 8) return { message: 'Use at least 8 characters for the new password.' };
+  if (newPassword !== confirmPassword) return { message: 'The new passwords do not match.' };
+  if (newPassword === currentPassword) return { message: 'Choose a new password different from your current one.' };
+
+  const { data: { user }, error: verifyError } = await getSupabasePasswordVerifier().auth.signInWithPassword({
+    email: admin.email,
+    password: currentPassword,
+  });
+  if (verifyError) {
+    if (verifyError.code === 'invalid_credentials') return { message: 'Current password is incorrect.' };
+    return { message: `Could not verify the current password: ${verifyError.message}` };
+  }
+  if (!user || user.id !== admin.id) return { message: 'Could not verify this administrator account.' };
+
+  const { error } = await getSupabaseServer().auth.updateUser({ password: newPassword });
+  if (error) return { message: `Could not change password: ${error.message}` };
+  return { ok: 'Password changed successfully.' };
 }
 
 export async function updateOrderStatusAction(fd) {

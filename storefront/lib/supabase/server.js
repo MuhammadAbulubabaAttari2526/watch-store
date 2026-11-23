@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 function getSupabaseConfig() {
@@ -26,6 +27,17 @@ export function getSupabaseServer() {
           // Server components cannot write cookies; middleware refreshes sessions before rendering.
         }
       },
+    },
+  });
+}
+
+export function getSupabasePasswordVerifier() {
+  const { url, key } = getSupabaseConfig();
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
     },
   });
 }

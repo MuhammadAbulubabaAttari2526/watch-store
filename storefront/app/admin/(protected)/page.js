@@ -7,6 +7,7 @@ import TaxonomyManager from '@/components/admin/TaxonomyManager';
 import DiscountManager from '@/components/admin/DiscountManager';
 import CustomerStatusForm from '@/components/admin/CustomerStatusForm';
 import ReviewStatusForm from '@/components/admin/ReviewStatusForm';
+import AdminPasswordForm from '@/components/admin/AdminPasswordForm';
 import { formatPrice } from '@/lib/utils/format';
 
 export const metadata = { title: 'Admin dashboard | VELTRIX', robots: { index: false } };
@@ -16,7 +17,7 @@ const date = (value) => value ? new Intl.DateTimeFormat('en-PK', { day: '2-digit
 const name = (customer) => [customer?.firstName, customer?.lastName].filter(Boolean).join(' ') || customer?.email || 'Guest';
 
 async function loadDashboard(tab, searchParams) {
-  const overview = await adminApi('GET', '/api/admin/analytics/overview');
+  const overview = tab === 'overview' ? await adminApi('GET', '/api/admin/analytics/overview') : null;
   let orders = null;
   let products = null;
   let settings = null;
@@ -40,7 +41,7 @@ async function loadDashboard(tab, searchParams) {
 
 export default async function Page({ searchParams }) {
   const admin = await requireAdmin();
-  const tab = ['overview', 'orders', 'products', 'customers', 'reviews', 'inventory', 'settings'].includes(searchParams.tab) ? searchParams.tab : 'overview';
+  const tab = ['overview', 'orders', 'products', 'customers', 'reviews', 'inventory', 'settings', 'security'].includes(searchParams.tab) ? searchParams.tab : 'overview';
   const { overview, orders, products, settings, customers, reviews, inventory } = await loadDashboard(tab, searchParams);
   const nav = [
     ['overview', 'Overview'],
@@ -50,10 +51,11 @@ export default async function Page({ searchParams }) {
     ['reviews', 'Reviews'],
     ['inventory', 'Inventory history'],
     ['settings', 'Store settings'],
+    ['security', 'Security'],
   ];
   const headings = {
     overview: 'Dashboard', orders: 'Orders', products: 'Products', customers: 'Customers',
-    reviews: 'Reviews', inventory: 'Inventory history', settings: 'Store settings',
+    reviews: 'Reviews', inventory: 'Inventory history', settings: 'Store settings', security: 'Security',
   };
 
   return (
@@ -238,6 +240,15 @@ export default async function Page({ searchParams }) {
             <DiscountManager discounts={settings?.discounts} />
             <BannerManager banners={settings?.banners} />
           </div>
+        )}
+        {tab === 'security' && (
+          <article className="admin-panel admin-security">
+            <div className="admin-panel__head"><h2>Change administrator password</h2></div>
+            <div className="admin-security__body">
+              <p>Confirm your current password before choosing a new one.</p>
+              <AdminPasswordForm />
+            </div>
+          </article>
         )}
       </section>
     </main>

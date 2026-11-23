@@ -7,7 +7,7 @@ export default function Page({ searchParams }) {
     <section className="section"><div className="container auth">
       <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Choose a new password</h1>
       <hr className="tick-rule" style={{ margin: 'var(--sp-4) 0 var(--sp-5)' }} />
-      {code || tokenHash || recovery === '1' ? <ResetForm code={code} token_hash={tokenHash} recovery={recovery} /> : <div className="stack"><div className="alert alert--error">This reset link is not valid.</div><Link className="btn" href="/account/forgot-password">Request a new link</Link></div>}
+      {code || tokenHash || recovery === '1' ? <ResetForm code={code} token_hash={tokenHash} recovery={recovery} returnTo={searchParams.returnTo} /> : <div className="stack"><div className="alert alert--error">This reset link is not valid.</div><Link className="btn" href="/account/forgot-password">Request a new link</Link></div>}
     </div></section>
   );
 }

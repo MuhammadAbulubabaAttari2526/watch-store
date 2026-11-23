@@ -19,7 +19,14 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/account/login?authError=1', request.url));
   }
 
-  let destination = safeNext(url.searchParams.get('next'));
-  if (type === 'recovery') destination = '/account/reset-password?recovery=1';
-  return NextResponse.redirect(new URL(destination, request.url));
+  let destination = new URL(safeNext(url.searchParams.get('next')), request.url);
+  if (type === 'recovery') {
+    if (destination.pathname !== '/account/reset-password') {
+      destination = new URL('/account/reset-password', request.url);
+    }
+    destination.searchParams.set('recovery', '1');
+  } else if (destination.pathname === '/account/reset-password') {
+    destination.searchParams.set('recovery', '1');
+  }
+  return NextResponse.redirect(destination);
 }

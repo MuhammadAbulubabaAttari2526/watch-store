@@ -7,7 +7,7 @@ export default async function Page({ searchParams }) {
     <section className="section"><div className="container auth">
       <h1 style={{ fontSize: 'var(--fs-2xl)' }}>Reset your password</h1>
       <hr className="tick-rule" style={{ margin: 'var(--sp-4) 0 var(--sp-5)' }} />
-      <ForgotForm  />
+      <ForgotForm next={searchParams.next} />
     </div></section>
   );
 }
