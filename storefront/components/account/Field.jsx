@@ -1,9 +1,9 @@
 'use client';
 import { useFormStatus } from 'react-dom';
 
-export default function Field({ name, label, error, hint, ...props }) {
+export default function Field({ name, label, error, hint, className = '', ...props }) {
   return (
-    <div className={'field' + (error ? ' has-error' : '')}>
+    <div className={'field' + (error ? ' has-error' : '') + (className ? ` ${className}` : '')}>
       <label htmlFor={name}>{label}</label>
       <input id={name} name={name} className="input" aria-invalid={!!error} aria-describedby={`${name}-e`} {...props} />
       {hint && !error && <span className="field__hint">{hint}</span>}

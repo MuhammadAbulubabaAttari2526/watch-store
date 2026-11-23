@@ -1,27 +1,35 @@
-# VELTRIX Supabase Migration Plan
+# VELTRIX Supabase migration status
 
-## Current architecture
+## Starting architecture
 
-- The storefront is a Next.js 14 App Router application in `storefront/`.
-- The custom API is an Express application in `custom-backend/`, backed by PostgreSQL and Prisma.
-- The database already models product variants, categories, collections, inventory, customer addresses, carts, orders, discounts, reviews, store settings, newsletter subscribers, and admin roles/permissions.
-- The storefront calls the API for product catalog, cart and shipping operations. Next.js server actions proxy customer authentication, profile, address, checkout, order history, and admin operations.
-- The API implements catalog and admin product management, inventory, analytics, order management, discounts, newsletter, settings, review moderation, and uploads to local disk.
-- The current deployment guide requires separate storefront/API services and a PostgreSQL database. The storefront has no Supabase SDK dependency or Supabase project configuration.
+The project is a Next.js 14 App Router storefront plus an Express/Prisma backend in `custom-backend/`. The old relational model includes products/variants, inventory, categories/collections, customer accounts and addresses, carts, discounts, COD orders, reviews, newsletter subscriptions, store settings, and locally uploaded files.
 
-## Migration sequence
+## Implemented in the storefront and migration
 
-1. **Establish Supabase configuration and database security.** Add a reusable Supabase client, Supabase CLI configuration, a non-destructive SQL migration based on the existing relational model, and RLS policies. Put authoritative checkout, inventory, and role changes behind database functions with permission checks. Do not copy data, apply migrations to a live project, or remove the current API without an explicitly configured Supabase project and verified cutover.
-2. **Replace catalog and public store reads.** Migrate storefront product, category, collection, public settings, banners, and image URL reads to Supabase while preserving the existing mapper and page interfaces.
-3. **Migrate authentication and customer data.** Replace API-backed customer sessions with Supabase Auth sessions; migrate profile, address, and customer-owned order access. Establish admin role assignment outside public signup and enforce it in RLS and privileged database functions.
-4. **Migrate cart and checkout.** Preserve cart UX and persistence. Use trusted database pricing, discount, stock, and idempotency checks in one transaction for order placement; validate COD workflow and stock restoration on cancellation.
-5. **Migrate admin functionality.** Move product and image management, inventory, orders, settings, analytics, discounts, customers, reviews, newsletter administration, and upload operations. Preserve current authorization boundaries and UI.
-6. **Verify and prepare deployment.** Update environment examples, setup checks, tests, and Vercel/Supabase instructions. Run available tests/build and test database RLS/transaction behavior on a configured project.
-7. **Retire the custom backend only after successful cutover.** Keep its source, Prisma migrations, and upload files intact until data transfer, feature parity, and production verification have succeeded. Deletion or destructive data operations require an explicit approved cutover.
+- Added the Supabase project configuration and a PostgreSQL migration for profiles, catalog and variant data, inventory, customer addresses, discounts, orders/items, payments, order timeline, settings, banners, newsletter subscribers, reviews, and wishlists.
+- Added RLS, protected admin functions, public catalog/search functions, transactional server-priced checkout, stock adjustments/restoration, and admin-only Storage upload policies for product images and store assets.
+- Replaced storefront catalog, settings, banner, image URL, local cart, shipping preview, discount validation, Auth, customer profile/address/order, newsletter, checkout, admin catalog, order/status/payment, inventory, and store settings access with Supabase-backed flows.
+- Added admin product editing and image handling, admin order details/status/payment actions, customer lookup/details/status management, review moderation, inventory history, store settings, banners, category/collection management, and discount-code management without replacing the existing storefront design.
+- Added deployment and staging-test instructions. Removed unused Neon tooling/dependencies and the storefront's unused generic custom-API client.
+- Validation completed locally: the storefront test suite passes (62 tests), the Supabase environment check passes with the current local configuration, and the Next.js production build succeeds.
+- The production Supabase schema migration has been applied successfully. Post-migration verification found 22 public VELTRIX tables, 7 public enum types, 2 Storage buckets, 46 public RLS policies, and 4 Storage policies.
+- The configured admin email was confirmed in Supabase Auth and its profile was promoted to `admin`/`ACTIVE`. The signed-out admin login route now renders successfully; password sign-in and protected dashboard operations remain unverified.
 
-## Scope and verification checkpoints
+## Remaining work and blockers
 
-- Preserve the Next.js pages, components, styles, responsive behavior, and currently implemented features; do not introduce fake production products.
-- Implement schema and security first; inspect resulting SQL and run local storefront tests/build before proceeding to live-project validation.
-- This workspace currently provides no Supabase URL or public key in the documented example configuration. Live authentication, storage, RLS execution, data migration, and end-to-end testing therefore require project configuration and must not be reported as verified until available.
-- Existing backend APIs for password reset, online payment processing, and some rich admin functions are absent or not exposed by the current storefront. Do not claim those pre-existing capabilities were migrated without evidence.
+- **Production admin account bootstrap is complete, but live admin sign-in and protected dashboard operations have not yet been verified.** Broader RLS behavior, SQL function runtime semantics, Storage uploads, customer Auth callbacks, and transactional checkout still require live verification.
+- **Legacy data and uploads have not been transferred.** A local-only migration-export command now writes a repeatable-read snapshot of application rows (excluding password hashes), upload files, SHA-256 image checksums, and row counts under the ignored `custom-backend/backups/` directory. This is not a full database backup. A Supabase importer is still pending; customer-to-Auth identity mapping and order/image reconciliation must be rehearsed on staging first.
+- Obsolete Express API runtime, routes, middleware, server entrypoint, Docker setup, seed/migration files, local `.env`, and generated `node_modules` have been removed. The legacy Prisma schema and migration export/upload tooling are retained because legacy data has not yet been reconciled; removing those retained data-bearing/upload files requires a separate verified backup and explicit approval.
+- Legacy multi-role admin users and permissions are not mapped to Supabase's simpler admin/customer roles. Customer review submission is not exposed as a new storefront workflow.
+- Disabling a customer blocks app profile access and customer RLS operations, but does not ban the identity from Supabase Auth itself.
+- Online payment processing is not part of the current storefront's existing COD workflow.
+
+## Safe next steps
+
+1. Sign in through `/admin/login` with the rotated password and verify dashboard access, then test admin/customer RLS using isolated records.
+2. Create and test a restorable full legacy database backup. Then run `npm run data:export` from `custom-backend/`, protect the resulting PII-containing export, define and rehearse ID/identity mappings, and reconcile counts and totals.
+3. If a separate disposable staging project becomes available, rehearse Auth, Storage, checkout, and RLS tests there before further production writes.
+4. Complete end-to-end/responsive testing and establish backups and rollback.
+5. Only after explicit cutover approval, import/reconcile production data; retain a recoverable legacy backup before retiring remaining legacy assets.
+
+No destructive database operation or live production cutover has been performed.

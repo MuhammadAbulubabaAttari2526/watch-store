@@ -1,42 +1,38 @@
 # VELTRIX
 
-VELTRIX is a Next.js watch storefront paired with its custom Express/Prisma API in `custom-backend/`.
+VELTRIX is a Next.js 14 watch storefront. Its active storefront backend uses Supabase for PostgreSQL, Auth, Storage, and row-level security. The obsolete Express/Prisma runtime has been removed from `custom-backend/`; only the legacy Prisma schema and migration/export/upload assets retained for approved data transfer remain.
 
-## Run locally
+## Set up the storefront
 
-1. Use a local PostgreSQL database named `veltrix_custom`, or configure Neon. Neon setup writes the pooled `DATABASE_URL` and direct `DATABASE_URL_UNPOOLED` connection strings to the repository-root `.env.local`; the backend loads those alongside `custom-backend/.env`.
-2. Configure and start the API:
+1. Create a Supabase project and configure the Auth redirect URLs described in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+2. Apply the database migration from the repository root:
 
    ```powershell
-   cd custom-backend
-   Copy-Item .env.example .env
-   # Edit .env: set DATABASE_URL, a unique JWT_SECRET, and admin credentials.
-   npm ci
-   npm run db:generate
-   npm run db:deploy
-   npm run db:seed
-   npm run dev
+   npx supabase login
+   npx supabase link --project-ref YOUR_PROJECT_REF
+   npx supabase db push
    ```
 
-3. In a second terminal, configure and start the storefront:
+   The migration creates the commerce schema, RLS policies, checkout functions, and the `product-images` and `store-assets` Storage buckets.
+3. Configure and run the storefront:
 
    ```powershell
    cd storefront
    Copy-Item .env.example .env.local
-   # Set NEXT_PUBLIC_API_URL=http://localhost:4000 in .env.local.
+   # Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
    npm ci
    npm run dev
    ```
 
-Open `http://localhost:3000`. The API listens on port 4000. Set `CORS_ORIGIN` in the backend `.env` to the exact storefront origin when deploying.
+   Open `http://localhost:3000`.
 
-The backend uses Prisma’s `node-postgres` adapter with pooled `DATABASE_URL` for application queries and the direct `DATABASE_URL_UNPOOLED` for migrations.
+4. Create an account through the storefront, confirm it, then promote the intended administrator in the Supabase SQL Editor using the safe bootstrap procedure in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-The backend currently supports the catalog, carts, discounts, COD checkout, newsletter, and customer account/order endpoints used by the storefront. Online payments and password reset are not implemented.
+Do not expose a Supabase `service_role` key in the storefront or Vercel environment variables. Never promote an admin through public signup or user-editable profile fields.
 
-## Checks
+## Validation
 
-From `storefront/`:
+Run from `storefront/`:
 
 ```powershell
 npm test
@@ -44,4 +40,8 @@ npm run check
 npm run build
 ```
 
-With the backend and database running, from `custom-backend/` run `npm run test:smoke` to exercise API flows. See [docs/TESTING.md](docs/TESTING.md) and [GUIDE_ROMAN_URDU.md](GUIDE_ROMAN_URDU.md).
+See [docs/TESTING.md](docs/TESTING.md) for what has been verified locally and the live Supabase checks still required. See [docs/SUPABASE_MIGRATION_PLAN.md](docs/SUPABASE_MIGRATION_PLAN.md) for the migration status and remaining cutover work.
+
+## Legacy backend and data
+
+The Supabase migration has been applied successfully to the configured production project. Legacy data and uploaded files have not yet been copied or reconciled. Retain `custom-backend/`, its database, and its uploads until a backup, explicit data mapping/import, reconciliation, and cutover have been approved.

@@ -30,6 +30,10 @@ function mapOrder(order) {
 export async function getAdmin() {
   const supabase = getSupabaseServer();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError?.name === 'AuthSessionMissingError' ||
+      authError?.message?.toLowerCase().includes('auth session missing')) {
+    return null;
+  }
   if (authError) throw new Error(`Could not verify admin session: ${authError.message}`);
   if (!user) return null;
 

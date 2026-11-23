@@ -15,11 +15,11 @@ export default async function Home() {
       <Hero banner={banners[0]} />
       <Collections />
       <ProductRail id="featured" title="Featured watches" load={() => listProducts({ limit: 4 })}
-        empty="No watches yet. Add products in Medusa Admin and they will appear here." />
+        empty="No featured watches are available yet." />
       <ProductRail id="best-sellers" title="Best sellers" load={() => listProducts({ limit: 4, collectionHandle: 'best-sellers' })}
-        empty="Add products to a collection with the handle best-sellers in Medusa Admin." />
+        empty="No best sellers are available yet." />
       <ProductRail id="new-arrivals" title="New arrivals" load={() => listProducts({ limit: 4, collectionHandle: 'new-arrivals' })}
-        empty="Add products to a collection with the handle new-arrivals in Medusa Admin." />
+        empty="No new arrivals are available yet." />
       <BrandStory />
       <WhyChoose />
       <Newsletter />

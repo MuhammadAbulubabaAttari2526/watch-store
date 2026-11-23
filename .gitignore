@@ -7,4 +7,3 @@ dist
 !.env.production.example
 backups
 *.log
-.neon

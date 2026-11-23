@@ -1,4 +1,4 @@
-// Edit this file to match your real courier timelines. Charges themselves come from Medusa shipping options.
+// Courier timelines are separate from delivery charges, which come from Supabase store settings.
 import { PK_CITIES } from '../utils/phone.js';
 
 export const ETA_DEFAULT = '3 to 6 working days';
