@@ -207,24 +207,28 @@ export async function placeOrderAction(order) {
   const address = order?.shippingAddress;
   const items = Array.isArray(order?.items) ? order.items : [];
   if (!address || !items.length || !order.idempotencyKey) {
-    throw new Error('Checkout information is incomplete. Review your cart and delivery details.');
+    return { error: 'Checkout information is incomplete. Review your cart and delivery details.' };
   }
-  const { data, error } = await getSupabaseServer().rpc('checkout_order', {
-    p_items: items.map(({ variantId, quantity }) => ({ variantId, quantity })),
-    p_contact_email: order.contactEmail,
-    p_shipping_first_name: address.firstName,
-    p_shipping_last_name: address.lastName,
-    p_shipping_address1: address.address1,
-    p_shipping_address2: address.address2 || null,
-    p_shipping_city: address.city,
-    p_shipping_region: address.region || null,
-    p_shipping_postal_code: address.postalCode || null,
-    p_shipping_phone: address.phone,
-    p_order_notes: order.orderNotes || null,
-    p_discount_code: order.discountCode || null,
-    p_idempotency_key: order.idempotencyKey,
-  });
-  if (error) throw new Error(`Could not place order: ${error.message}`);
-  revalidatePath('/account/orders');
-  return data;
+  try {
+    const { data, error } = await getSupabaseServer().rpc('checkout_order', {
+      p_items: items.map(({ variantId, quantity }) => ({ variantId, quantity })),
+      p_contact_email: order.contactEmail,
+      p_shipping_first_name: address.firstName,
+      p_shipping_last_name: address.lastName,
+      p_shipping_address1: address.address1,
+      p_shipping_address2: address.address2 || null,
+      p_shipping_city: address.city,
+      p_shipping_region: address.region || null,
+      p_shipping_postal_code: address.postalCode || null,
+      p_shipping_phone: address.phone,
+      p_order_notes: order.orderNotes || null,
+      p_discount_code: order.discountCode || null,
+      p_idempotency_key: order.idempotencyKey,
+    });
+    if (error) return { error: `Could not place order: ${error.message}` };
+    revalidatePath('/account/orders');
+    return { data };
+  } catch (error) {
+    return { error: `Could not place order: ${error?.message || 'Please try again.'}` };
+  }
 }

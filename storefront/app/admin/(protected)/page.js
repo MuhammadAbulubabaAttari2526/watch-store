@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { adminApi } from '@/lib/admin/server';
-import { updateOrderStatusAction, updateProductStatusAction } from '@/lib/admin/actions';
+import { OrderStatusForm } from '@/components/admin/OrderStatusForms';
+import ProductStatusForm from '@/components/admin/ProductStatusForm';
 import StoreSettingsForm from '@/components/admin/StoreSettingsForm';
 import BannerManager from '@/components/admin/BannerManager';
 import TaxonomyManager from '@/components/admin/TaxonomyManager';
@@ -171,13 +172,7 @@ export default async function Page({ searchParams }) {
                         <td>{stock}</td>
                         <td>{date(product.updatedAt)}</td>
                         <td><Link className="link-btn" href={`/admin/products/${encodeURIComponent(product.id)}`}>Edit</Link>{' '}
-                          <form action={updateProductStatusAction} style={{ display: 'inline-flex', gap: 8 }}>
-                            <input type="hidden" name="id" value={product.id} />
-                            <select className="input" aria-label={`Set status for ${product.title}`} name="status" defaultValue={product.status}>
-                              {['DRAFT', 'PUBLISHED', 'ARCHIVED'].map((status) => <option key={status}>{status}</option>)}
-                            </select>
-                            <button className="link-btn" type="submit">Save status</button>
-                          </form>
+                          <ProductStatusForm product={product} />
                         </td>
                       </tr>
                     );
@@ -320,13 +315,7 @@ function OrderTable({ items, compact = false }) {
               <td><StatusBadge value={order.status} /></td>
               <td>{money(order.total, order.currencyCode)}</td>
               <td>{date(order.createdAt)}</td>
-              {!compact && <td><form action={updateOrderStatusAction} style={{ display: 'inline-flex', gap: 8 }}>
-                <input type="hidden" name="id" value={order.id} />
-                <select className="input" name="status" aria-label={`Update order ${order.orderNumber}`} defaultValue={order.status}>
-                  {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].map((status) => <option key={status}>{status}</option>)}
-                </select>
-                <button className="link-btn" type="submit">Save</button>
-              </form></td>}
+              {!compact && <td><OrderStatusForm order={order} /></td>}
             </tr>
           ))}
         </tbody>

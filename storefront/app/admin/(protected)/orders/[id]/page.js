@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getAdminOrder } from '@/lib/admin/server';
-import { updateOrderStatusAction, updatePaymentStatusAction } from '@/lib/admin/actions';
+import { OrderStatusForm, PaymentStatusForm } from '@/components/admin/OrderStatusForms';
 import { formatPrice } from '@/lib/utils/format';
 
 export const metadata = { title: 'Order details | VELTRIX', robots: { index: false } };
@@ -36,15 +36,7 @@ export default async function AdminOrderPage({ params }) {
               <div className="summary__total"><dt>Total</dt><dd>{formatPrice(order.total, currency)}</dd></div>
             </dl>
             {(order.payments || []).map((payment) => (
-              <form action={updatePaymentStatusAction} className="stack" key={payment.id}>
-                <input type="hidden" name="id" value={order.id} />
-                <label className="field">Payment status ({payment.method})
-                  <select className="input" name="status" defaultValue={payment.status}>
-                    {['PENDING', 'PAID', 'FAILED', 'REFUNDED'].map((status) => <option key={status}>{status}</option>)}
-                  </select>
-                </label>
-                <button className="btn btn--ghost" type="submit">Update payment</button>
-              </form>
+              <PaymentStatusForm orderId={order.id} payment={payment} key={payment.id} />
             ))}
           </article>
         </div>
@@ -59,14 +51,7 @@ export default async function AdminOrderPage({ params }) {
         </article>
         <article className="admin-panel stack">
           <div className="admin-panel__head"><h2>Status and timeline</h2></div>
-          <form action={updateOrderStatusAction} className="admin-panel__head">
-            <input type="hidden" name="id" value={order.id} />
-            <label className="field">New status<select className="input" name="status" defaultValue={order.status}>
-              {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].map((status) => <option key={status}>{status}</option>)}
-            </select></label>
-            <label className="field">Note<input className="input" name="note" maxLength="500" /></label>
-            <button className="btn" type="submit">Update order</button>
-          </form>
+          <OrderStatusForm order={order} detailed />
           <ol>{(order.order_timeline || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((item) => (
             <li key={item.id}>{item.status} — {item.note || 'Status updated'} ({new Date(item.created_at).toLocaleString('en-PK')})</li>
           ))}</ol>

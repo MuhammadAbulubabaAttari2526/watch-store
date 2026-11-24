@@ -8,6 +8,19 @@ import { Submit, Notice } from '@/components/account/Field';
 
 const empty = { id: '', title: '', image_url: '', link_url: '', alt_text: '', position: 0, is_active: true };
 
+function BannerDeleteForm({ item }) {
+  const [state, action] = useFormState(deleteBannerAction, {});
+  return (
+    <form action={action} className="stack" onSubmit={(event) => {
+      if (!window.confirm(`Delete banner “${item.title}”?`)) event.preventDefault();
+    }}>
+      <input type="hidden" name="id" value={item.id} />
+      <Submit className="link-btn">Delete</Submit>
+      <Notice state={state} />
+    </form>
+  );
+}
+
 export default function BannerManager({ banners = [] }) {
   const [state, action] = useFormState(saveBannerAction, {});
   const [banner, setBanner] = useState(empty);
@@ -72,10 +85,7 @@ export default function BannerManager({ banners = [] }) {
                 id: item.id, title: item.title, image_url: item.image_url, link_url: item.link_url || '',
                 alt_text: item.alt_text || '', position: item.position, is_active: item.is_active,
               })}>Edit</button>
-              <form action={deleteBannerAction} onSubmit={(event) => { if (!window.confirm(`Delete banner “${item.title}”?`)) event.preventDefault(); }}>
-                <input type="hidden" name="id" value={item.id} />
-                <button className="link-btn" type="submit">Delete</button>
-              </form>
+              <BannerDeleteForm item={item} />
             </div>
           </li>
         ))}

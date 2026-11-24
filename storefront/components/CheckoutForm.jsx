@@ -92,7 +92,7 @@ export default function CheckoutForm() {
     setPlacing(true);
     try {
       const [first, ...rest] = f.name.trim().split(/\s+/);
-      const order = await placeOrderAction({
+      const result = await placeOrderAction({
         idempotencyKey: idempotencyKey.current || (idempotencyKey.current = crypto.randomUUID()),
         items: items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
         contactEmail: f.email.trim(),
@@ -109,6 +109,12 @@ export default function CheckoutForm() {
           phone: normalizePkPhone(f.phone),
         },
       });
+      if (result?.error) {
+        setFail(result.error);
+        setPlacing(false);
+        return;
+      }
+      const order = result.data;
       idempotencyKey.current = null;
       const o = order;
       try {

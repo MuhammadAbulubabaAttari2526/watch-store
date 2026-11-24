@@ -114,11 +114,36 @@ export default function ProductEditorForm({ product, categories = [], collection
         categoryIds,
         collectionIds,
       };
-      const id = await saveProductAction(payload);
+      const result = await saveProductAction(payload);
+      if (result?.error) {
+        setMessage(result.error);
+        return;
+      }
+      const id = result.id;
       router.push(`/admin/products/${encodeURIComponent(id)}`);
       router.refresh();
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeProduct(event) {
+    event.preventDefault();
+    if (!window.confirm('Delete this product? This cannot be undone.')) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const result = await deleteProductAction(new FormData(event.currentTarget));
+      if (result?.error) {
+        setMessage(result.error);
+        return;
+      }
+      router.push('/admin?tab=products');
+      router.refresh();
+    } catch (error) {
+      setMessage(error.message || 'Could not delete this product.');
     } finally {
       setBusy(false);
     }
@@ -189,7 +214,7 @@ export default function ProductEditorForm({ product, categories = [], collection
         </section>
         <button className="btn" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save product'}</button>
       </form>
-      {existing && <form action={deleteProductAction} onSubmit={(event) => { if (!window.confirm('Delete this product? This cannot be undone.')) event.preventDefault(); }}><input type="hidden" name="id" value={product.id} /><button className="link-btn" type="submit" disabled={busy}>Delete product</button></form>}
+      {existing && <form onSubmit={removeProduct}><input type="hidden" name="id" value={product.id} /><button className="link-btn" type="submit" disabled={busy}>{busy ? 'Working…' : 'Delete product'}</button></form>}
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function Submit({ children, className = '' }) {
 }
 export const Notice = ({ state }) => (
   <>
-    {state?.message && <div className="alert alert--error" role="alert">{state.message}</div>}
+    {(state?.error || state?.message) && <div className="alert alert--error" role="alert">{state.error || state.message}</div>}
     {state?.ok && <div className="alert alert--success" role="status">{state.ok}</div>}
   </>
 );

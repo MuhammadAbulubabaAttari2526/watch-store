@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useFormState } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { adminLogoutAction } from '@/lib/admin/actions';
+import { Notice } from '@/components/account/Field';
 
 const navigation = [
   ['overview', 'Overview', 'M0 3h7v7H0zM10 3h7v7h-7zM0 13h7v7H0zM10 13h7v7h-7z', '/admin'],
@@ -36,6 +38,7 @@ export default function AdminBody({ admin, children }) {
   const initials = displayName.slice(0, 1).toUpperCase();
   const canSearch = ['products', 'orders', 'customers'].includes(sectionName);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [logoutState, logoutAction] = useFormState(adminLogoutAction, {});
 
   useEffect(() => {
     document.body.classList.add('admin-ui');
@@ -71,7 +74,10 @@ export default function AdminBody({ admin, children }) {
             <strong>{displayName}</strong>
             <small>{admin.role}</small>
           </span>
-          <form action={adminLogoutAction}><button type="submit" aria-label="Sign out">↗</button></form>
+          <div>
+            <form action={logoutAction}><button type="submit" aria-label="Sign out">↗</button></form>
+            <Notice state={logoutState} />
+          </div>
         </div>
       </aside>
       <div className="admin-main">

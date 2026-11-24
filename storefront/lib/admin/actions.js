@@ -30,9 +30,9 @@ export async function adminLoginAction(_prev, fd) {
   redirect('/admin');
 }
 
-export async function adminLogoutAction() {
+export async function adminLogoutAction(_prev, _fd) {
   const { error } = await getSupabaseServer().auth.signOut();
-  if (error) throw new Error(`Could not sign out: ${error.message}`);
+  if (error) return { error: `Could not sign out: ${error.message}` };
   redirect('/admin/login');
 }
 
@@ -64,31 +64,33 @@ export async function changeAdminPasswordAction(_prev, fd) {
   return { ok: 'Password changed successfully.' };
 }
 
-export async function updateOrderStatusAction(fd) {
+export async function updateOrderStatusAction(_prev, fd) {
   const id = text(fd, 'id');
   const status = text(fd, 'status');
-  if (!id || !ORDER_STATUSES.has(status)) throw new Error('Choose a valid order status.');
+  if (!id || !ORDER_STATUSES.has(status)) return { error: 'Choose a valid order status.' };
   const { error } = await getSupabaseServer().rpc('update_order_status', {
     p_order_id: id,
     p_status: status,
     p_note: text(fd, 'note') || null,
   });
-  if (error) throw new Error(`Could not update order status: ${error.message}`);
+  if (error) return { error: `Could not update order status: ${error.message}` };
   revalidatePath('/admin');
   revalidatePath(`/admin/orders/${encodeURIComponent(id)}`);
+  return { ok: 'Order status updated.' };
 }
 
-export async function updatePaymentStatusAction(fd) {
+export async function updatePaymentStatusAction(_prev, fd) {
   const id = text(fd, 'id');
   const status = text(fd, 'status');
-  if (!id || !PAYMENT_STATUSES.has(status)) throw new Error('Choose a valid payment status.');
+  if (!id || !PAYMENT_STATUSES.has(status)) return { error: 'Choose a valid payment status.' };
   const { error } = await getSupabaseServer().rpc('update_payment_status', {
     p_order_id: id,
     p_payment_status: status,
   });
-  if (error) throw new Error(`Could not update payment status: ${error.message}`);
+  if (error) return { error: `Could not update payment status: ${error.message}` };
   revalidatePath('/admin');
   revalidatePath(`/admin/orders/${encodeURIComponent(id)}`);
+  return { ok: 'Payment status updated.' };
 }
 
 export async function updateCustomerStatusAction(_prev, fd) {
@@ -126,72 +128,75 @@ export async function updateReviewStatusAction(_prev, fd) {
   return { ok: 'Review status updated.' };
 }
 
-export async function updateProductStatusAction(fd) {
+export async function updateProductStatusAction(_prev, fd) {
   const id = text(fd, 'id');
   const status = text(fd, 'status');
-  if (!id || !PRODUCT_STATUSES.has(status)) throw new Error('Choose a valid product status.');
+  if (!id || !PRODUCT_STATUSES.has(status)) return { error: 'Choose a valid product status.' };
   const { error } = await getSupabaseServer().from('products')
     .update({ status, published_at: status === 'PUBLISHED' ? new Date().toISOString() : null })
     .eq('id', id);
-  if (error) throw new Error(`Could not update product status: ${error.message}`);
+  if (error) return { error: `Could not update product status: ${error.message}` };
   revalidatePath('/admin');
   revalidatePath('/products');
   revalidatePath('/');
+  return { ok: 'Product status updated.' };
 }
 
 export async function saveProductAction(product) {
   await requireAdmin();
-  if (!product || typeof product !== 'object') throw new Error('Product details are missing.');
+  if (!product || typeof product !== 'object') return { error: 'Product details are missing.' };
   const supabase = getSupabaseServer();
   const productId = product.id || null;
   let oldImages = [];
   if (productId) {
     const { data, error } = await supabase.from('product_images').select('url').eq('product_id', productId);
-    if (error) throw new Error(`Could not load existing product images: ${error.message}`);
+    if (error) return { error: `Could not load existing product images: ${error.message}` };
     oldImages = (data || []).map((image) => image.url);
   }
   const { data, error } = await supabase.rpc('save_product', { p_product: product });
-  if (error) throw new Error(`Could not save product: ${error.message}`);
+  if (error) return { error: `Could not save product: ${error.message}` };
   const retained = new Set((product.images || []).map((image) => image.url));
   const removedPaths = oldImages.filter((url) => !retained.has(url)).map(storagePath).filter(Boolean);
   if (removedPaths.length) {
     const { error: storageError } = await supabase.storage.from('product-images').remove(removedPaths);
-    if (storageError) throw new Error(`Product saved, but removed image files could not be deleted: ${storageError.message}`);
+    if (storageError) return { error: `Product saved, but removed image files could not be deleted: ${storageError.message}` };
   }
   revalidatePath('/admin');
   revalidatePath('/products');
-  return data;
+  return { id: data };
 }
 
 export async function deleteProductAction(fd) {
   const id = text(fd, 'id');
-  if (!id) throw new Error('Product ID is required.');
+  if (!id) return { error: 'Product ID is required.' };
   const supabase = getSupabaseServer();
   const { data: images, error: imageError } = await supabase.from('product_images').select('url').eq('product_id', id);
-  if (imageError) throw new Error(`Could not load product images: ${imageError.message}`);
+  if (imageError) return { error: `Could not load product images: ${imageError.message}` };
   const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) throw new Error(`Could not delete product: ${error.message}`);
+  if (error) return { error: `Could not delete product: ${error.message}` };
   const paths = (images || []).map((image) => storagePath(image.url)).filter(Boolean);
   if (paths.length) {
     const { error: storageError } = await supabase.storage.from('product-images').remove(paths);
-    if (storageError) throw new Error(`Product deleted, but image files could not be removed: ${storageError.message}`);
+    if (storageError) return { error: `Product deleted, but image files could not be removed: ${storageError.message}` };
   }
   revalidatePath('/admin');
   revalidatePath('/products');
+  return { ok: true };
 }
 
 export async function adjustInventoryAction(fd) {
   const variantId = text(fd, 'variant_id');
   const deltaText = text(fd, 'delta');
   const delta = Number(deltaText);
-  if (!variantId || !deltaText || !Number.isInteger(delta)) throw new Error('Enter a valid stock adjustment.');
+  if (!variantId || !deltaText || !Number.isInteger(delta)) return { error: 'Enter a valid stock adjustment.' };
   const { error } = await getSupabaseServer().rpc('adjust_inventory', {
     p_variant_id: variantId,
     p_delta: delta,
     p_note: text(fd, 'note') || null,
   });
-  if (error) throw new Error(`Could not update inventory: ${error.message}`);
+  if (error) return { error: `Could not update inventory: ${error.message}` };
   revalidatePath('/admin');
+  return { ok: 'Inventory updated.' };
 }
 
 export async function saveStoreSettingsAction(_prev, fd) {
@@ -282,22 +287,23 @@ export async function saveBannerAction(_prev, fd) {
   return { ok: 'Banner saved.', done: Date.now() };
 }
 
-export async function deleteBannerAction(fd) {
+export async function deleteBannerAction(_prev, fd) {
   await requireAdmin();
   const id = text(fd, 'id');
-  if (!id) throw new Error('Banner ID is required.');
+  if (!id) return { error: 'Banner ID is required.' };
   const supabase = getSupabaseServer();
   const { data: banner, error: readError } = await supabase.from('banners').select('image_url').eq('id', id).maybeSingle();
-  if (readError) throw new Error(`Could not load banner: ${readError.message}`);
+  if (readError) return { error: `Could not load banner: ${readError.message}` };
   const { error } = await supabase.from('banners').delete().eq('id', id);
-  if (error) throw new Error(`Could not delete banner: ${error.message}`);
+  if (error) return { error: `Could not delete banner: ${error.message}` };
   const path = storagePath(banner?.image_url, 'store-assets');
   if (path) {
     const { error: storageError } = await supabase.storage.from('store-assets').remove([path]);
-    if (storageError) throw new Error(`Banner deleted, but its image could not be removed: ${storageError.message}`);
+    if (storageError) return { error: `Banner deleted, but its image could not be removed: ${storageError.message}` };
   }
   revalidatePath('/');
   revalidatePath('/admin');
+  return { ok: 'Banner deleted.' };
 }
 
 export async function saveTaxonomyAction(_prev, fd) {
