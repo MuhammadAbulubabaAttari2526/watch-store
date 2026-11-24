@@ -66,13 +66,15 @@ export default function MotionEffects() {
       if (root.querySelectorAll) targets.push(...root.querySelectorAll(MOTION_TARGETS));
 
       targets.forEach((element) => {
-        if (element.classList.contains('motion-in')) return;
-        const index = element.parentElement
-          ? Array.prototype.indexOf.call(element.parentElement.children, element)
-          : 0;
-        element.style.setProperty('--motion-delay', `${(index % 4) * 90}ms`);
-        element.classList.add('motion-in');
-        observer.observe(element);
+        if (!element.classList.contains('motion-in')) {
+          const index = element.parentElement
+            ? Array.prototype.indexOf.call(element.parentElement.children, element)
+            : 0;
+          element.style.setProperty('--motion-delay', `${(index % 4) * 90}ms`);
+          element.classList.add('motion-in');
+        }
+
+        if (!element.classList.contains('motion-in--shown')) observer.observe(element);
       });
     };
 
