@@ -150,7 +150,7 @@ export default async function Page({ searchParams }) {
               </div>
             </div>
             <div className="admin-table-wrap">
-              <table className="admin-table">
+              <table className="admin-table admin-table--products">
                 <thead><tr><th>Product</th><th>Brand</th><th>Status</th><th>Stock</th><th>Updated</th><th>Manage</th></tr></thead>
                 <tbody>
                   {(products?.items || []).map((product) => {
