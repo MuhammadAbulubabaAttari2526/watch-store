@@ -1428,7 +1428,8 @@ body.admin-ui main#main {
   .admin-login__form .input { min-height: 3rem; }
   .admin-login__submit { min-height: 3.15rem; }
   .admin-login__back-row { margin-top: 1.25rem; gap: .75rem; }
-  .admin-shell { grid-template-columns: 1fr; }
+  .admin-shell,
+  .admin-shell:not(.admin-shell--collapsed) { grid-template-columns: minmax(0, 1fr); }
   .admin-shell--collapsed .admin-sidebar { display: none; }
   .admin-sidebar {
     position: sticky;

@@ -32,7 +32,7 @@ export default function AdminBody({ admin, children }) {
       : pathname.startsWith('/admin/customers')
         ? 'customers'
         : activeTab;
-  const displayName = [admin.firstName, admin.lastName].filter(Boolean).join(' ') || admin.email || 'Administrator';
+  const displayName = [admin?.firstName, admin?.lastName].filter(Boolean).join(' ') || admin?.email || 'Administrator';
   const initials = displayName.slice(0, 1).toUpperCase();
   const canSearch = ['products', 'orders', 'customers'].includes(sectionName);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,6 +41,8 @@ export default function AdminBody({ admin, children }) {
     document.body.classList.add('admin-ui');
     return () => document.body.classList.remove('admin-ui');
   }, []);
+
+  if (!admin) return children;
 
   return (
     <div className={`admin-shell${sidebarOpen ? '' : ' admin-shell--collapsed'}`}>
