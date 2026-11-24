@@ -126,6 +126,7 @@ export default function CheckoutForm() {
           items: (o.items || []).map((i) => ({ title: i.productTitle, variant: i.variantTitle, qty: i.quantity, total: Number(i.lineTotal) })),
         }));
       } catch {}
+      try { localStorage.setItem('veltrix_last_order_number', o.orderNumber); } catch {}
       clearCart();
       router.replace('/order/confirmed');
     } catch (e) { setFail(e.message); setPlacing(false); }

@@ -182,11 +182,12 @@ export async function deleteProductAction(fd) {
 
 export async function adjustInventoryAction(fd) {
   const variantId = text(fd, 'variant_id');
-  const quantity = Number(text(fd, 'quantity'));
-  if (!variantId || !Number.isInteger(quantity) || quantity < 0) throw new Error('Enter a valid stock quantity.');
+  const deltaText = text(fd, 'delta');
+  const delta = Number(deltaText);
+  if (!variantId || !deltaText || !Number.isInteger(delta)) throw new Error('Enter a valid stock adjustment.');
   const { error } = await getSupabaseServer().rpc('adjust_inventory', {
     p_variant_id: variantId,
-    p_quantity: quantity,
+    p_delta: delta,
     p_note: text(fd, 'note') || null,
   });
   if (error) throw new Error(`Could not update inventory: ${error.message}`);

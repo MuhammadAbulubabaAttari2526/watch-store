@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { deleteProductAction, saveProductAction } from '@/lib/admin/actions';
 
-const initialVariant = () => ({ id: '', title: 'Default', sku: '', price: '', salePrice: '', quantity: 0, options: {}, isActive: true });
+const initialVariant = () => ({ id: '', title: 'Default', sku: '', price: '', salePrice: '', quantity: 0, originalQuantity: 0, options: {}, isActive: true });
 
 export default function ProductEditorForm({ product, categories = [], collections = [] }) {
   const router = useRouter();
@@ -29,16 +29,20 @@ export default function ProductEditorForm({ product, categories = [], collection
     status: product?.status || 'DRAFT',
     featured: Boolean(product?.featured),
   });
-  const [variants, setVariants] = useState((product?.product_variants || []).map((variant) => ({
-    id: variant.id,
-    title: variant.title,
-    sku: variant.sku,
-    price: String(variant.price),
-    salePrice: variant.sale_price == null ? '' : String(variant.sale_price),
-    quantity: Array.isArray(variant.inventory) ? variant.inventory[0]?.quantity || 0 : variant.inventory?.quantity || 0,
-    options: variant.options || {},
-    isActive: variant.is_active,
-  })));
+  const [variants, setVariants] = useState((product?.product_variants || []).map((variant) => {
+    const quantity = Array.isArray(variant.inventory) ? variant.inventory[0]?.quantity || 0 : variant.inventory?.quantity || 0;
+    return {
+      id: variant.id,
+      title: variant.title,
+      sku: variant.sku,
+      price: String(variant.price),
+      salePrice: variant.sale_price == null ? '' : String(variant.sale_price),
+      quantity,
+      originalQuantity: quantity,
+      options: variant.options || {},
+      isActive: variant.is_active,
+    };
+  }));
   const [images, setImages] = useState((product?.product_images || [])
     .slice().sort((a, b) => a.position - b.position)
     .map((image) => ({ url: image.url, altText: image.alt_text || '', position: image.position })));
@@ -103,6 +107,8 @@ export default function ProductEditorForm({ product, categories = [], collection
           price: Number(variant.price),
           salePrice: variant.salePrice === '' ? null : Number(variant.salePrice),
           quantity: Number(variant.quantity),
+          originalQuantity: Number(variant.originalQuantity ?? 0),
+          quantityChanged: Boolean(variant.id) && Number(variant.quantity) !== Number(variant.originalQuantity ?? 0),
           options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => String(value).trim())),
         })),
         categoryIds,
@@ -144,7 +150,7 @@ export default function ProductEditorForm({ product, categories = [], collection
 
         <section className="stack">
           <div className="admin-panel__head"><h3>Variants and stock</h3><button className="btn btn--ghost" type="button" onClick={() => setVariants((current) => [...current, initialVariant()])}>Add variant</button></div>
-          <p className="field__hint admin-variant-help">To offer colour choices, add one variant for each colour and fill in its Colour option. Customers can then select a colour on the product page.</p>
+          <p className="field__hint admin-variant-help">To offer colour choices, add one variant for each colour and fill in its Colour option. Customers can then select a colour on the product page. Stock edits apply as a change from the quantity shown when this form opened, so orders placed while you edit remain counted.</p>
           {variants.map((variant, index) => (
             <fieldset className="box stack" key={variant.id || index}>
               <legend>{variant.title || `Variant ${index + 1}`}</legend>
