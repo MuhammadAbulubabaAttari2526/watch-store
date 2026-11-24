@@ -7,6 +7,7 @@ import '../styles/cart.css';
 import '../styles/account.css';
 import '../styles/motion.css';
 import '../styles/admin.css';
+import '../styles/premium.css';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
