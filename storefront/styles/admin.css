@@ -1442,10 +1442,24 @@ body.admin-ui main#main {
   .admin-sidebar__mark { height: auto; margin: 0; font-size: 1.9rem; }
   .admin-sidebar__wordmark { font-size: 1.1rem; }
   .admin-sidebar__tagline { display: none; }
-  .admin-nav { display: flex; min-width: 0; gap: .25rem; overflow-x: auto; }
-  .admin-nav a { min-height: 2.6rem; flex: 0 0 auto; gap: .45rem; padding: .5rem .65rem; font-size: .78rem; white-space: nowrap; }
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.25rem, 1fr));
+    min-width: 0;
+    gap: .3rem;
+    overflow: visible;
+  }
+  .admin-nav a {
+    min-width: 0;
+    min-height: 2.65rem;
+    gap: .4rem;
+    padding: .4rem .45rem;
+    font-size: .75rem;
+    white-space: normal;
+  }
   .admin-nav a svg { width: 1.15rem; height: 1.15rem; }
-  .admin-nav a.is-active::before { inset: auto .55rem -.55rem; width: auto; height: 2px; }
+  .admin-nav a span { min-width: 0; overflow-wrap: anywhere; line-height: 1.2; }
+  .admin-nav a.is-active::before { inset: .45rem auto .45rem 0; width: 2px; height: auto; }
   .admin-shell .admin-sidebar__user { display: none; }
   .admin-globalbar { min-height: 3.8rem; }
   .admin-globalbar__left { gap: .65rem; }
