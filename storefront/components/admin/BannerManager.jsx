@@ -42,11 +42,11 @@ export default function BannerManager({ banners = [] }) {
   }
 
   return (
-    <section className="admin-panel stack">
+    <section className="admin-panel admin-fields-panel admin-banner-panel stack">
       <div className="admin-panel__head"><h2>Store banners</h2></div>
       <Notice state={state} />
       {uploadError && <div className="alert alert--error" role="alert">{uploadError}</div>}
-      <form action={action} className="stack">
+      <form action={action} className="stack admin-fields-form">
         <input type="hidden" name="id" value={banner.id} />
         <input type="hidden" name="image_url" value={banner.image_url} />
         <div className="two">
@@ -57,7 +57,7 @@ export default function BannerManager({ banners = [] }) {
         </div>
         <label className="field">Banner image (JPG, PNG, WebP or AVIF; up to 5 MB)<input className="input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={upload} disabled={uploading} /></label>
         {banner.image_url && <img src={banner.image_url} alt={banner.alt_text} width="240" height="100" style={{ objectFit: 'cover' }} />}
-        <label><input type="checkbox" name="is_active" checked={banner.is_active} onChange={(e) => setBanner({ ...banner, is_active: e.target.checked })} /> Active on the storefront</label>
+        <label className="admin-check-field"><input type="checkbox" name="is_active" checked={banner.is_active} onChange={(e) => setBanner({ ...banner, is_active: e.target.checked })} /> Active on the storefront</label>
         <div className="admin-panel__head">
           <button className="btn btn--ghost" type="button" onClick={() => setBanner(empty)}>New banner</button>
           <Submit>{banner.id ? 'Save banner' : 'Add banner'}</Submit>

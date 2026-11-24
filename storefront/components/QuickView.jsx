@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatPrice } from '@/lib/utils/format';
 import { useStoreCurrency } from './StoreProvider';
 
-export default function QuickView({ product: p }) {
+export default function QuickView({ product: p, featured = false }) {
   const currency = useStoreCurrency();
   const [open, setOpen] = useState(false);
   const closeRef = useRef(null);
@@ -17,7 +17,13 @@ export default function QuickView({ product: p }) {
   }, [open]);
   return (
     <>
-      <button type="button" className="link-btn" onClick={() => setOpen(true)} aria-label={`Quick view of ${p.title}`}>Quick view</button>
+      <button type="button" className={featured ? 'featured-card__quickview' : 'link-btn'} onClick={() => setOpen(true)} aria-label={`Quick view of ${p.title}`}>
+        {featured ? (
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+          </svg>
+        ) : 'Quick view'}
+      </button>
       {open && (
         <div className="modal" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <div className="modal__panel" role="dialog" aria-modal="true" aria-label={p.title}>

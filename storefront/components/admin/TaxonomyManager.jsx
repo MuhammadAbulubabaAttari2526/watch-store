@@ -7,7 +7,7 @@ import { Notice, Submit } from '@/components/account/Field';
 function TaxonomyForm({ type, item, availableParents = [] }) {
   const [state, action] = useFormState(saveTaxonomyAction, {});
   return (
-    <form action={action} className="stack">
+    <form action={action} className="stack admin-fields-form">
       <input type="hidden" name="type" value={type} />
       {item && <input type="hidden" name="id" value={item.id} />}
       <div className="two">
@@ -53,9 +53,9 @@ function TaxonomyDelete({ type, item }) {
 export default function TaxonomyManager({ categories = [], collections = [] }) {
   const categoryItems = categories.map((item) => ({ ...item, availableParents: categories }));
   return (
-    <section className="admin-panel stack">
+    <section className="admin-panel admin-fields-panel admin-taxonomy-panel stack">
       <div className="admin-panel__head"><h2>Categories and collections</h2></div>
-      <div className="admin-grid">
+      <div className="admin-grid admin-taxonomy-grid">
         <div className="stack">
           <h3>Add category</h3><TaxonomyForm type="category" availableParents={categories} />
           {categoryItems.map((item) => <TaxonomyDelete key={item.id} type="category" item={item} />)}
