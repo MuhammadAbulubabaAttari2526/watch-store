@@ -144,6 +144,7 @@ export default function ProductEditorForm({ product, categories = [], collection
 
         <section className="stack">
           <div className="admin-panel__head"><h3>Variants and stock</h3><button className="btn btn--ghost" type="button" onClick={() => setVariants((current) => [...current, initialVariant()])}>Add variant</button></div>
+          <p className="field__hint admin-variant-help">To offer colour choices, add one variant for each colour and fill in its Colour option. Customers can then select a colour on the product page.</p>
           {variants.map((variant, index) => (
             <fieldset className="box stack" key={variant.id || index}>
               <legend>{variant.title || `Variant ${index + 1}`}</legend>

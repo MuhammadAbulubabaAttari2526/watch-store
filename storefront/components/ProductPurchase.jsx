@@ -1,10 +1,41 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { formatPrice } from '@/lib/utils/format';
 import { useStoreCurrency } from './StoreProvider';
-import { useEffect } from 'react';
+
+const COLOR_SWATCHES = {
+  black: '#171715', charcoal: '#45443f', graphite: '#55534e', gunmetal: '#62666a',
+  white: '#fffefa', ivory: '#eee8d9', cream: '#eee2c4', beige: '#d8c8a5',
+  silver: '#c9cbcb', steel: '#899094', gray: '#92918c', grey: '#92918c',
+  gold: '#c5a46d', 'yellow gold': '#d4ae55', champagne: '#d8c294',
+  'rose gold': '#bd806d', bronze: '#9d694b', brown: '#70503b', tan: '#b58a62',
+  blue: '#315c91', 'navy blue': '#263a59', navy: '#263a59', 'sky blue': '#73a9ca',
+  green: '#527153', olive: '#777143', red: '#a63c32', burgundy: '#6d2838',
+  maroon: '#6d2838', purple: '#70518b', pink: '#d48ca0', orange: '#c57639',
+};
+
+const COLOR_NAMES = Object.keys(COLOR_SWATCHES).sort((a, b) => b.length - a.length);
+
+function simpleSwatch(value) {
+  const normalized = String(value).trim().toLowerCase().replace(/\b(dial|finish|tone|metallic|matte|glossy|dark|light)\b/g, ' ').replace(/\s+/g, ' ').trim();
+  if (/^#[\da-f]{3,8}$/i.test(normalized)) return normalized;
+  if (COLOR_SWATCHES[normalized]) return COLOR_SWATCHES[normalized];
+  const name = COLOR_NAMES.find((color) => new RegExp(`(?:^|\\b)${color}(?:\\b|$)`, 'i').test(normalized));
+  return name ? COLOR_SWATCHES[name] : null;
+}
+
+function swatchFor(value) {
+  const parts = String(value).split(/\s*(?:\/|,|&|\+|\band\b)\s*/i).filter(Boolean);
+  if (parts.length > 1) {
+    const colors = parts.map(simpleSwatch);
+    if (colors.every(Boolean)) return `linear-gradient(135deg, ${colors.map((color, index) => `${color} ${index / colors.length * 100}% ${(index + 1) / colors.length * 100}%`).join(', ')})`;
+  }
+  return simpleSwatch(value);
+}
+
+const isColorOption = (option) => /colou?r/i.test(`${option.id} ${option.title}`);
 
 export default function ProductPurchase({ product, whatsapp }) {
   const options = product.options.filter((o) => o.values.length > 1);
@@ -69,18 +100,35 @@ export default function ProductPurchase({ product, whatsapp }) {
       </div>
       {status && <p className={'pdp__stock ' + (variant.available ? '' : 'pdp__stock--out')} role="status">{status}</p>}
 
-      {options.map((o) => (
-        <fieldset key={o.id} className="opt">
-          <legend>{o.title}{sel[o.id] ? `: ${sel[o.id]}` : ''}</legend>
-          <div className="opt__values">
-            {o.values.map((val) => {
-              const out = valueSoldOut(o, val);
-              return <button key={val} type="button" className={'opt__btn' + (sel[o.id] === val ? ' is-on' : '') + (out ? ' is-out' : '')}
-                aria-pressed={sel[o.id] === val} onClick={() => { setSel({ ...sel, [o.id]: val }); setQty(1); }}>{val}{out && <span className="visually-hidden"> (sold out)</span>}</button>;
-            })}
-          </div>
-        </fieldset>
-      ))}
+      {options.map((o) => {
+        const colorOption = isColorOption(o);
+        return (
+          <fieldset key={o.id} className={'opt' + (colorOption ? ' opt--color' : '')}>
+            <legend>{colorOption ? 'Choose colour' : o.title}{sel[o.id] ? `: ${sel[o.id]}` : ''}</legend>
+            <div className={'opt__values' + (colorOption ? ' opt__values--swatches' : '')}>
+              {o.values.map((val) => {
+                const out = valueSoldOut(o, val);
+                const selected = sel[o.id] === val;
+                const swatch = colorOption ? swatchFor(val) : null;
+                const classes = (selected ? ' is-on' : '') + (out ? ' is-out' : '');
+                if (colorOption && swatch) {
+                  return (
+                    <button key={val} type="button" className={'opt__swatch' + classes}
+                      style={{ '--swatch-fill': swatch }} aria-label={`Choose ${val}${out ? ', sold out' : ''}`}
+                      aria-pressed={selected} title={val}
+                      onClick={() => { setSel({ ...sel, [o.id]: val }); setQty(1); }}>
+                      <span className="opt__swatch-dot" aria-hidden="true" />
+                      <span className="opt__swatch-label">{val}</span>
+                    </button>
+                  );
+                }
+                return <button key={val} type="button" className={'opt__btn' + classes}
+                  aria-pressed={selected} onClick={() => { setSel({ ...sel, [o.id]: val }); setQty(1); }}>{val}{out && <span className="visually-hidden"> (sold out)</span>}</button>;
+              })}
+            </div>
+          </fieldset>
+        );
+      })}
 
       {variant && (
         <div className="pdp__qty-row">
