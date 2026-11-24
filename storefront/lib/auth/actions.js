@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { normalizePkPhone } from '@/lib/utils/phone';
+import { safeInternalPath } from '@/lib/utils/redirects';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const text = (fd, key) => String(fd.get(key) ?? '').trim();
-const safeNext = (next, fallback = '/account') => (next && next.startsWith('/') && !next.startsWith('//') ? next : fallback);
 const authError = (error) => error.message || 'The request could not be completed. Please try again.';
 
 export async function loginAction(_prev, fd) {
@@ -18,7 +18,7 @@ export async function loginAction(_prev, fd) {
   const supabase = getSupabaseServer();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { message: 'Email or password is incorrect.' };
-  redirect(safeNext(text(fd, 'next')));
+  redirect(safeInternalPath(text(fd, 'next')));
 }
 
 export async function submitProductReviewAction(_prev, fd) {
@@ -89,7 +89,7 @@ export async function registerAction(_prev, fd) {
     ? 'An account with this email already exists. Try signing in.'
     : authError(error) };
   if (!data.session) return { ok: 'Check your email to confirm your account, then sign in.' };
-  redirect(safeNext(text(fd, 'next')));
+  redirect(safeInternalPath(text(fd, 'next')));
 }
 
 export async function logoutAction() {
@@ -102,7 +102,7 @@ export async function forgotPasswordAction(_prev, fd) {
   const email = text(fd, 'email').toLowerCase();
   if (!EMAIL.test(email)) return { errors: { email: 'Enter a valid email address.' } };
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  const returnTo = safeNext(text(fd, 'next'), '/account/login');
+  const returnTo = safeInternalPath(text(fd, 'next'), '/account/login');
   const resetPage = new URL('/account/reset-password', siteUrl);
   resetPage.searchParams.set('returnTo', returnTo);
   const callback = new URL('/auth/callback', siteUrl);
@@ -117,7 +117,7 @@ export async function resetPasswordAction(_prev, fd) {
   const code = text(fd, 'code');
   const tokenHash = text(fd, 'token_hash');
   const recovery = text(fd, 'recovery') === '1';
-  const returnTo = safeNext(text(fd, 'return_to'), '/account/login');
+  const returnTo = safeInternalPath(text(fd, 'return_to'), '/account/login');
   const password = String(fd.get('password') || '');
   if (!code && !tokenHash && !recovery) return { message: 'This reset link is not valid. Request a new one.' };
   if (password.length < 8) return { errors: { password: 'Use at least 8 characters.' } };

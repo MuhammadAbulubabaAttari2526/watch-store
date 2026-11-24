@@ -1,3 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCustomer } from '@/lib/auth/server';
-export async function guestOnly(next) { if (await getCustomer()) redirect(next && next.startsWith('/') && !next.startsWith('//') ? next : '/account'); }
+import { safeInternalPath } from '@/lib/utils/redirects';
+
+export async function guestOnly(next) {
+  if (await getCustomer()) redirect(safeInternalPath(next));
+}

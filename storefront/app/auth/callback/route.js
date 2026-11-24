@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabase/server';
-
-const safeNext = (value) => value && value.startsWith('/') && !value.startsWith('//') ? value : '/account';
+import { safeInternalPath } from '@/lib/utils/redirects';
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -19,7 +18,7 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/account/login?authError=1', request.url));
   }
 
-  let destination = new URL(safeNext(url.searchParams.get('next')), request.url);
+  let destination = new URL(safeInternalPath(url.searchParams.get('next')), request.url);
   if (type === 'recovery') {
     if (destination.pathname !== '/account/reset-password') {
       destination = new URL('/account/reset-password', request.url);
