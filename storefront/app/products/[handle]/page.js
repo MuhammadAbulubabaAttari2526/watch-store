@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getProduct, listProducts } from '@/lib/api/store';
+import { getProduct, getProductReviews, listProducts } from '@/lib/api/store';
 import { SITE_URL, SPEC_LABELS, whatsappUrl } from '@/lib/utils/format';
 import ProductGallery from '@/components/ProductGallery';
 import ProductPurchase from '@/components/ProductPurchase';
+import ProductDetailsTabs from '@/components/ProductDetailsTabs';
 import ProductCard from '@/components/ProductCard';
 import RecentlyViewed from '@/components/RecentlyViewed';
 
@@ -32,6 +33,8 @@ export default async function ProductPage({ params }) {
 
   let related = [];
   try { related = (await listProducts({ limit: 5, collectionHandle: product.collection?.handle })).filter((p) => p.id !== product.id).slice(0, 4); } catch {}
+  let reviewData = { items: [], ownReview: null };
+  try { reviewData = await getProductReviews(product.id); } catch {}
 
   const images = product.images.length ? product.images : product.thumbnail ? [{ id: 't', url: product.thumbnail }] : [];
   const specs = Object.entries(SPEC_LABELS).filter(([k]) => product.metadata[k]).map(([k, label]) => [label, String(product.metadata[k])]);
@@ -66,20 +69,15 @@ export default async function ProductPage({ params }) {
               <div><span className="pdp__trust-icon" aria-hidden="true">↶</span><p>7 Days Easy Return</p></div>
               <div><span className="pdp__trust-icon" aria-hidden="true">▣</span><p>Secure Payment</p></div>
             </div>
-            <div className="pdp-tabs">
-              <div className="pdp-tabs__labels" role="tablist" aria-label="Product details">
-                <span className="is-active" role="tab" aria-selected="true">Description</span>
-                <span role="tab" aria-selected="false">Specifications</span>
-                <span role="tab" aria-selected="false">Reviews</span>
-              </div>
-              <div className="pdp-tabs__body">
-                {product.description
-                  ? <p className="pre">{product.description}</p>
-                  : <p>Upgrade your style with the VELTRIX {product.title}. A perfect blend of classic design and modern elegance, crafted for those who value time.</p>}
-                {specs.length > 0 && <dl className="specs pdp-specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
-                {warranty && <p className="pdp-tabs__warranty">Warranty: {warranty}</p>}
-              </div>
-            </div>
+            <ProductDetailsTabs
+              description={product.description}
+              specs={specs}
+              warranty={warranty}
+              productId={product.id}
+              handle={product.handle}
+              reviews={reviewData.items}
+              ownReview={reviewData.ownReview}
+            />
           </div>
         </div>
         {related.length > 0 && (

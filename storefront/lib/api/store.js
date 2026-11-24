@@ -121,6 +121,35 @@ export async function getProduct(handle) {
   return data ? toProduct(mapProduct(data)) : null;
 }
 
+export async function getProductReviews(productId) {
+  const supabase = getSupabaseServer();
+  const [reviewsResult, authResult] = await Promise.all([
+    supabase.from('reviews')
+      .select('id,rating,title,body,created_at')
+      .eq('product_id', productId)
+      .eq('status', 'APPROVED')
+      .order('created_at', { ascending: false })
+      .limit(100),
+    supabase.auth.getUser(),
+  ]);
+
+  if (reviewsResult.error) throw new Error(`Could not load product reviews: ${reviewsResult.error.message}`);
+
+  let ownReview = null;
+  const user = authResult.data?.user;
+  if (user) {
+    const { data, error } = await supabase.from('reviews')
+      .select('id,rating,status,created_at')
+      .eq('product_id', productId)
+      .eq('customer_id', user.id)
+      .maybeSingle();
+    if (error) throw new Error(`Could not load your product review: ${error.message}`);
+    ownReview = data;
+  }
+
+  return { items: reviewsResult.data || [], ownReview };
+}
+
 export async function listProductHandles() {
   const first = await searchProducts({ page: 1, pageSize: 100 });
   const remaining = await Promise.all(Array.from({ length: Math.max(0, first.pages - 1) }, (_, index) =>

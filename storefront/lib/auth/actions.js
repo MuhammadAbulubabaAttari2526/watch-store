@@ -21,6 +21,48 @@ export async function loginAction(_prev, fd) {
   redirect(safeNext(text(fd, 'next')));
 }
 
+export async function submitProductReviewAction(_prev, fd) {
+  const productId = text(fd, 'product_id');
+  const rating = Number(fd.get('rating'));
+  const title = text(fd, 'title');
+  const body = text(fd, 'body');
+
+  if (!productId) return { message: 'This product could not be identified. Refresh and try again.' };
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return { message: 'Choose a star rating before submitting.' };
+  if (title.length > 100) return { message: 'Keep your review title under 100 characters.' };
+  if (body.length < 10) return { message: 'Write at least 10 characters about your experience.' };
+  if (body.length > 2000) return { message: 'Keep your review under 2,000 characters.' };
+
+  const supabase = getSupabaseServer();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { message: 'Sign in with a customer account to leave a review.' };
+
+  const [{ data: profile, error: profileError }, { data: product, error: productError }] = await Promise.all([
+    supabase.from('profiles').select('role,status').eq('id', user.id).maybeSingle(),
+    supabase.from('products').select('slug').eq('id', productId).eq('status', 'PUBLISHED').maybeSingle(),
+  ]);
+  if (profileError || productError) return { message: 'We could not verify this review. Please try again.' };
+  if (!profile || profile.role !== 'customer' || profile.status !== 'ACTIVE') {
+    return { message: 'Only active customer accounts can submit product reviews.' };
+  }
+  if (!product) return { message: 'This watch is not available for reviews.' };
+
+  const { error } = await supabase.from('reviews').insert({
+    product_id: productId,
+    customer_id: user.id,
+    rating,
+    title: title || null,
+    body,
+    status: 'PENDING',
+  });
+
+  if (error?.code === '23505') return { message: 'You have already submitted a review for this watch.' };
+  if (error) return { message: 'We could not submit your review. Please try again.' };
+
+  revalidatePath(`/products/${product.slug}`);
+  return { ok: 'Thank you! Your review was submitted and will appear after approval.' };
+}
+
 export async function registerAction(_prev, fd) {
   const first = text(fd, 'first_name');
   const last = text(fd, 'last_name') || first;

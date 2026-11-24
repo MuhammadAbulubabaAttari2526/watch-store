@@ -32,7 +32,7 @@ export const viewport = { themeColor: '#101010' };
 
 export default async function RootLayout({ children }) {
   const [c, settings] = await Promise.all([getCustomer(), getPublicStoreSettings()]);
-  const customer = c ? { id: c.id, email: c.email, first_name: c.first_name, last_name: c.last_name, phone: c.phone, addresses: (c.addresses || []).map((a) => ({ id: a.id, address_1: a.address_1, city: a.city, postal_code: a.postal_code, is_default_shipping: a.is_default_shipping })) } : null;
+  const customer = c ? { id: c.id, email: c.email, first_name: c.first_name, last_name: c.last_name, phone: c.phone, role: c.role, status: c.status, addresses: (c.addresses || []).map((a) => ({ id: a.id, address_1: a.address_1, city: a.city, postal_code: a.postal_code, is_default_shipping: a.is_default_shipping })) } : null;
   return (
     <html lang="en">
       <head>
