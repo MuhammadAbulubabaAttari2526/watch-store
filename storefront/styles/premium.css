@@ -711,7 +711,7 @@ body.admin-ui {
     line-height: 1.5;
   }
   .hero__cta { min-height: 3.15rem; margin-top: .25rem; padding-inline: 1.2rem; font-size: .68rem; }
-  .dial { width: clamp(12rem, 60vw, 18rem); justify-self: end; margin: .2rem .1rem -.35rem 0; }
+  .dial { width: clamp(12rem, 60vw, 18rem); justify-self: center; margin: .2rem auto -.35rem; }
   .hero > .container:last-child { width: 100%; padding-bottom: .65rem; }
 }
 
