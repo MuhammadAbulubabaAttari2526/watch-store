@@ -8,6 +8,25 @@ export async function GET(request) {
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type');
   const supabase = getSupabaseServer();
+  const requested = new URL(safeInternalPath(url.searchParams.get('next')), request.url);
+  const isRecovery = type === 'recovery' || requested.pathname === '/account/reset-password';
+
+  if (isRecovery) {
+    if (!code && !tokenHash) {
+      return NextResponse.redirect(new URL('/account/login?authError=1', request.url));
+    }
+    const destination = new URL('/account/reset-password', request.url);
+    if (code) destination.searchParams.set('code', code);
+    if (tokenHash) {
+      destination.searchParams.set('token_hash', tokenHash);
+      destination.searchParams.set('type', 'recovery');
+    }
+    const returnTo = requested.pathname === '/account/reset-password'
+      ? safeInternalPath(requested.searchParams.get('returnTo'), '/account/login')
+      : '/account/login';
+    destination.searchParams.set('returnTo', returnTo);
+    return NextResponse.redirect(destination);
+  }
 
   const result = code
     ? await supabase.auth.exchangeCodeForSession(code)
@@ -18,14 +37,5 @@ export async function GET(request) {
     return NextResponse.redirect(new URL('/account/login?authError=1', request.url));
   }
 
-  let destination = new URL(safeInternalPath(url.searchParams.get('next')), request.url);
-  if (type === 'recovery') {
-    if (destination.pathname !== '/account/reset-password') {
-      destination = new URL('/account/reset-password', request.url);
-    }
-    destination.searchParams.set('recovery', '1');
-  } else if (destination.pathname === '/account/reset-password') {
-    destination.searchParams.set('recovery', '1');
-  }
-  return NextResponse.redirect(destination);
+  return NextResponse.redirect(requested);
 }

@@ -139,22 +139,16 @@ export async function forgotPasswordAction(_prev, fd) {
 export async function resetPasswordAction(_prev, fd) {
   const code = text(fd, 'code');
   const tokenHash = text(fd, 'token_hash');
-  const recovery = text(fd, 'recovery') === '1';
   const returnTo = safeInternalPath(text(fd, 'return_to'), '/account/login');
   const password = String(fd.get('password') || '');
-  if (!code && !tokenHash && !recovery) return { message: 'This reset link is not valid. Request a new one.' };
+  if (!code && !tokenHash) return { message: 'This reset link is not valid. Request a new one.' };
   if (password.length < 8) return { errors: { password: 'Use at least 8 characters.' } };
 
   const supabase = getSupabaseServer();
-  if (tokenHash || code) {
-    const verification = tokenHash
-      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
-      : await supabase.auth.exchangeCodeForSession(code);
-    if (verification.error) return { message: 'This reset link has expired or was already used. Request a new one.' };
-  } else {
-    const { data: { user }, error: sessionError } = await supabase.auth.getUser();
-    if (sessionError || !user) return { message: 'This reset link has expired or was already used. Request a new one.' };
-  }
+  const verification = tokenHash
+    ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+    : await supabase.auth.exchangeCodeForSession(code);
+  if (verification.error) return { message: 'This reset link has expired or was already used. Request a new one.' };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { message: `Could not update your password: ${error.message}` };
   redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}reset=1`);
