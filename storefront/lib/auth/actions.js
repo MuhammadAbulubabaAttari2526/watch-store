@@ -18,6 +18,29 @@ export async function loginAction(_prev, fd) {
   const supabase = getSupabaseServer();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { message: 'Email or password is incorrect.' };
+
+  let isActiveCustomer;
+  let isActiveAdmin;
+  try {
+    const [customerAccess, adminAccess] = await Promise.all([
+      supabase.rpc('is_active_customer'),
+      supabase.rpc('is_admin'),
+    ]);
+    if (customerAccess.error || adminAccess.error) {
+      await supabase.auth.signOut();
+      return { message: 'We could not verify this account. Please try again.' };
+    }
+    isActiveCustomer = customerAccess.data;
+    isActiveAdmin = adminAccess.data;
+  } catch {
+    await supabase.auth.signOut();
+    return { message: 'We could not verify this account. Please try again.' };
+  }
+
+  if (!isActiveCustomer && !isActiveAdmin) {
+    await supabase.auth.signOut();
+    return { message: 'This account is not active for sign-in. Please contact support.' };
+  }
   redirect(safeInternalPath(text(fd, 'next')));
 }
 
