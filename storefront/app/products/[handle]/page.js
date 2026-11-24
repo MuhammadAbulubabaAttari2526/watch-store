@@ -47,8 +47,8 @@ export default async function ProductPage({ params }) {
   };
 
   return (
-    <section className="section">
-      <div className="container">
+    <section className="section pdp-section">
+      <div className="container pdp-container">
         <nav className="crumbs" aria-label="Breadcrumb">
           <Link href="/">Home</Link><span aria-hidden="true">/</span><Link href="/products">Watches</Link>
           {product.collection && <><span aria-hidden="true">/</span><Link href={`/products?collection=${product.collection.handle}`}>{product.collection.title}</Link></>}
@@ -56,16 +56,30 @@ export default async function ProductPage({ params }) {
         <div className="pdp">
           <ProductGallery images={images} title={product.title} />
           <div className="pdp__info stack">
-            <h1 style={{ fontSize: 'var(--fs-2xl)', margin: 0 }}>{product.title}</h1>
-            {product.subtitle && <p className="product-card__meta">{product.subtitle}</p>}
+            <div className="pdp__eyebrow"><span aria-hidden="true" />{product.collection?.title || 'Premium collection'}</div>
+            <h1>{product.title}</h1>
+            {product.subtitle && <p className="pdp__subtitle">{product.subtitle}</p>}
             <ProductPurchase product={product} whatsapp={whatsappUrl('Hello VELTRIX, I would like to order.')} />
-            {product.description && <p className="pre">{product.description}</p>}
-            {specs.length > 0 && (
-              <details className="acc" open><summary>Specifications</summary>
-                <dl className="specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></details>
-            )}
-            {warranty && <details className="acc"><summary>Warranty</summary><p>{warranty}</p></details>}
-            <details className="acc"><summary>Delivery</summary><p>We deliver across Pakistan. Shipping charges are shown at checkout, and you can pay with cash on delivery.</p></details>
+            <div className="pdp__trust" aria-label="Store benefits">
+              <div><span className="pdp__trust-icon" aria-hidden="true">◇</span><p>Premium Quality</p></div>
+              <div><span className="pdp__trust-icon" aria-hidden="true">▱</span><p>Free Shipping All Over Pakistan</p></div>
+              <div><span className="pdp__trust-icon" aria-hidden="true">↶</span><p>7 Days Easy Return</p></div>
+              <div><span className="pdp__trust-icon" aria-hidden="true">▣</span><p>Secure Payment</p></div>
+            </div>
+            <div className="pdp-tabs">
+              <div className="pdp-tabs__labels" role="tablist" aria-label="Product details">
+                <span className="is-active" role="tab" aria-selected="true">Description</span>
+                <span role="tab" aria-selected="false">Specifications</span>
+                <span role="tab" aria-selected="false">Reviews</span>
+              </div>
+              <div className="pdp-tabs__body">
+                {product.description
+                  ? <p className="pre">{product.description}</p>
+                  : <p>Upgrade your style with the VELTRIX {product.title}. A perfect blend of classic design and modern elegance, crafted for those who value time.</p>}
+                {specs.length > 0 && <dl className="specs pdp-specs">{specs.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+                {warranty && <p className="pdp-tabs__warranty">Warranty: {warranty}</p>}
+              </div>
+            </div>
           </div>
         </div>
         {related.length > 0 && (
