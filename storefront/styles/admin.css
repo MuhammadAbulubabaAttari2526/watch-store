@@ -504,6 +504,16 @@ body.admin-ui main#main {
   color: #d3b46e;
 }
 
+.admin-menu-toggle:focus-visible {
+  border-radius: .35rem;
+  outline: 2px solid #d3b46e;
+  outline-offset: -2px;
+}
+
+.admin-menu-toggle:active {
+  background: #171d27;
+}
+
 .admin-globalbar__left > p {
   display: flex;
   align-items: center;
@@ -845,6 +855,121 @@ body.admin-ui main#main {
 
 .admin-panel > form {
   padding: 1.25rem;
+}
+
+.admin-settings-form {
+  --stack: 1rem;
+}
+
+.admin-settings-form > .admin-panel__head {
+  position: relative;
+  border-bottom-color: #e8dfcc;
+}
+
+.admin-settings-form > .admin-panel__head::after {
+  position: absolute;
+  bottom: -1px;
+  left: 1rem;
+  width: 7rem;
+  height: 2px;
+  background: #d3a94f;
+  content: "";
+}
+
+.admin-settings-form .admin-section-heading svg {
+  width: 1.9rem;
+  height: 1.9rem;
+  color: #c49335;
+}
+
+.admin-settings-form__body {
+  padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.admin-settings-form .field {
+  gap: .45rem;
+  color: #222630;
+  font-size: .88rem;
+  font-weight: 600;
+}
+
+.admin-settings-form .input {
+  min-height: 3rem;
+  padding-left: 3rem;
+  border: 1px solid #ddb762;
+  border-radius: .65rem;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  background-position: .9rem center;
+  background-size: 1.2rem;
+  font-size: .9rem;
+  font-weight: 400;
+}
+
+.admin-settings-form .input:focus {
+  border-color: #b9892e;
+  outline: 2px solid rgba(211, 169, 79, .28);
+  outline-offset: 1px;
+}
+
+.admin-settings-form input[name="store_name"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m20 13-9 9-9-9V4h9l9 9Z'/%3E%3Ccircle cx='7.5' cy='8.5' r='1'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name="store_phone"],
+.admin-settings-form input[name="whatsapp_number"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 11.2 19a19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3.1a2 2 0 0 1-.6 1.7L7.2 10.3a16 16 0 0 0 6.5 6.5l1.8-1.8a2 2 0 0 1 1.7-.6l3.1.5a2 2 0 0 1 1.7 2Z'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name="store_email"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Cpath d='m3 7 9 6 9-6'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name="store_address"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z'/%3E%3Ccircle cx='12' cy='10' r='2.5'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name="announcement"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 11 18-5v12L3 13v-2ZM11 14l2 7H8l-1-8M5 11V7'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name="currency"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name^="shipping_"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7h11v11H3zM14 11h4l3 3v4h-7z'/%3E%3Ccircle cx='7.5' cy='19' r='1.5'/%3E%3Ccircle cx='18' cy='19' r='1.5'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[name$="_url"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c8050' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.5.5l3-3A5 5 0 0 0 13.4 3l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3A5 5 0 0 0 10.6 21l1.7-1.7'/%3E%3C/svg%3E");
+}
+
+.admin-settings-form input[type="file"] {
+  padding: .65rem;
+  background-image: none;
+}
+
+.admin-settings-form__body > img {
+  max-width: 10rem;
+  max-height: 3rem;
+  object-fit: contain;
+}
+
+.admin-settings-form .field__hint {
+  color: #697385;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.admin-settings-save {
+  min-width: 12rem;
+  min-height: 2.9rem;
+  justify-self: start;
+  border-radius: .6rem;
+  font-size: .9rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .admin-panel__head .field {
@@ -1217,6 +1342,7 @@ body.admin-ui main#main {
   .admin-login__submit { min-height: 3.15rem; }
   .admin-login__back-row { margin-top: 1.25rem; gap: .75rem; }
   .admin-shell { grid-template-columns: 1fr; }
+  .admin-shell--collapsed .admin-sidebar { display: none; }
   .admin-sidebar {
     position: sticky;
     top: 0;

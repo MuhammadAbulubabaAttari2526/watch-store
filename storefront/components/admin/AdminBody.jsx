@@ -50,7 +50,7 @@ export default function AdminBody({ admin, children }) {
           <span className="admin-sidebar__wordmark">VELTRIX</span>
           <span className="admin-sidebar__tagline">PREMIUM WATCHES</span>
         </Link>
-        <nav className="admin-nav" aria-label="Admin navigation">
+        <nav id="admin-navigation" className="admin-nav" aria-label="Admin navigation">
           {navigation.map(([key, label, icon, href]) => (
             <Link
               key={key}
@@ -80,6 +80,7 @@ export default function AdminBody({ admin, children }) {
               type="button"
               aria-label={sidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
               aria-expanded={sidebarOpen}
+              aria-controls="admin-navigation"
               onClick={() => setSidebarOpen((open) => !open)}
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
