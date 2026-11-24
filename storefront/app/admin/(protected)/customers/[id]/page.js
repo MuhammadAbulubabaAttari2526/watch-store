@@ -11,8 +11,7 @@ export default async function AdminCustomerPage({ params }) {
   if (!customer) notFound();
 
   return (
-    <main className="admin-shell">
-      <section className="admin-content stack">
+    <main className="admin-page admin-page--detail">
         <Link href="/admin?tab=customers">Back to customers</Link>
         <header className="admin-topbar">
           <div>
@@ -60,7 +59,6 @@ export default async function AdminCustomerPage({ params }) {
             </table>
           </div>
         </article>
-      </section>
     </main>
   );
 }

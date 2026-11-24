@@ -13,5 +13,5 @@ export default async function NewProductPage() {
     supabase.from('collections').select('id,name').order('name'),
   ]);
   if (categoryError || collectionError) throw new Error(`Could not load catalog options: ${categoryError?.message || collectionError?.message}`);
-  return <main className="admin-shell"><section className="admin-content"><ProductEditorForm categories={categories || []} collections={collections || []} /></section></main>;
+  return <section className="admin-page"><ProductEditorForm categories={categories || []} collections={collections || []} /></section>;
 }

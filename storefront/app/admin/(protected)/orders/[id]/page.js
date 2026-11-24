@@ -13,8 +13,7 @@ export default async function AdminOrderPage({ params }) {
   const customerName = [order.customer?.first_name, order.customer?.last_name].filter(Boolean).join(' ');
 
   return (
-    <main className="admin-shell">
-      <section className="admin-content stack">
+    <main className="admin-page admin-page--detail">
         <Link href="/admin?tab=orders">Back to orders</Link>
         <header className="admin-topbar">
           <div><p>Order details</p><h1>#{order.order_number}</h1></div>
@@ -72,7 +71,6 @@ export default async function AdminOrderPage({ params }) {
             <li key={item.id}>{item.status} — {item.note || 'Status updated'} ({new Date(item.created_at).toLocaleString('en-PK')})</li>
           ))}</ol>
         </article>
-      </section>
     </main>
   );
 }

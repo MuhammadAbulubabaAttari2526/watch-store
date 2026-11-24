@@ -122,11 +122,14 @@ export async function adminApi(method, path, options = {}) {
 
   if (path === '/api/admin/products') {
     const limit = Math.min(Math.max(Number(options.params?.limit) || 50, 1), 100);
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('products')
-      .select('*,product_variants(*,inventory(*))', { count: 'exact' })
+      .select('*,product_images(url,position),product_variants(*,inventory(*))', { count: 'exact' })
       .order('updated_at', { ascending: false })
       .limit(limit);
+    const search = String(options.params?.search || '').replace(/[^a-zA-Z0-9 _-]/g, ' ').trim().slice(0, 100);
+    if (search) query = query.or(`title.ilike.%${search}%,brand.ilike.%${search}%,slug.ilike.%${search}%`);
+    const { data, count, error } = await query;
     if (error) throw new Error(`Could not load admin products: ${error.message}`);
     return { items: (data || []).map(mapProduct), total: count || 0 };
   }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { adminApi, requireAdmin } from '@/lib/admin/server';
-import { adminLogoutAction, updateOrderStatusAction, updateProductStatusAction } from '@/lib/admin/actions';
+import { adminApi } from '@/lib/admin/server';
+import { updateOrderStatusAction, updateProductStatusAction } from '@/lib/admin/actions';
 import StoreSettingsForm from '@/components/admin/StoreSettingsForm';
 import BannerManager from '@/components/admin/BannerManager';
 import TaxonomyManager from '@/components/admin/TaxonomyManager';
@@ -27,7 +27,9 @@ async function loadDashboard(tab, searchParams) {
   if (tab === 'orders') orders = await adminApi('GET', '/api/admin/orders', {
     params: { limit: 50, status: searchParams.status, search: searchParams.q },
   });
-  if (tab === 'products') products = await adminApi('GET', '/api/admin/products', { params: { limit: 50 } });
+  if (tab === 'products') products = await adminApi('GET', '/api/admin/products', {
+    params: { limit: 50, search: searchParams.q },
+  });
   if (tab === 'settings') settings = await adminApi('GET', '/api/admin/settings');
   if (tab === 'customers') customers = await adminApi('GET', '/api/admin/customers', {
     params: { limit: 50, status: searchParams.status, search: searchParams.q },
@@ -40,49 +42,24 @@ async function loadDashboard(tab, searchParams) {
 }
 
 export default async function Page({ searchParams }) {
-  const admin = await requireAdmin();
   const tab = ['overview', 'orders', 'products', 'customers', 'reviews', 'inventory', 'settings', 'security'].includes(searchParams.tab) ? searchParams.tab : 'overview';
   const { overview, orders, products, settings, customers, reviews, inventory } = await loadDashboard(tab, searchParams);
-  const nav = [
-    ['overview', 'Overview'],
-    ['orders', 'Orders'],
-    ['products', 'Products'],
-    ['customers', 'Customers'],
-    ['reviews', 'Reviews'],
-    ['inventory', 'Inventory history'],
-    ['settings', 'Store settings'],
-    ['security', 'Security'],
-  ];
   const headings = {
     overview: 'Dashboard', orders: 'Orders', products: 'Products', customers: 'Customers',
     reviews: 'Reviews', inventory: 'Inventory history', settings: 'Store settings', security: 'Security',
   };
 
   return (
-    <main className="admin-shell">
-      <aside className="admin-sidebar">
-        <Link className="admin-sidebar__brand" href="/admin">VELTRIX</Link>
-        <nav className="admin-nav" aria-label="Admin navigation">
-          {nav.map(([value, label]) => (
-            <Link key={value} className={tab === value ? 'is-active' : ''} href={value === 'overview' ? '/admin' : `/admin?tab=${value}`}>
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="admin-sidebar__user">
-          <strong>{admin.firstName || 'Admin'} {admin.lastName || ''}</strong>
-          <span>{admin.role}</span>
-          <form action={adminLogoutAction}><button type="submit">Sign out</button></form>
-        </div>
-      </aside>
-
-      <section className="admin-content">
+    <main className="admin-page">
         <header className="admin-topbar">
           <div>
             <p>VELTRIX Administration</p>
             <h1>{headings[tab]}</h1>
           </div>
-          <Link className="admin-store-link" href="/">View store</Link>
+          <Link className="admin-store-link" href="/">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+            View store
+          </Link>
         </header>
 
         {tab === 'overview' && (
@@ -116,8 +93,14 @@ export default async function Page({ searchParams }) {
 
         {tab === 'orders' && (
           <article className="admin-panel">
-            <div className="admin-panel__head"><h2>All orders</h2><span>{orders?.total || 0} total</span></div>
-            <form method="get" className="admin-panel__head">
+            <div className="admin-panel__head">
+              <div className="admin-section-heading">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4h14v17H5zM9 2v4M15 2v4M8 10h8M8 14h8M8 18h5" /></svg>
+                <h2>All orders</h2>
+              </div>
+              <span>{orders?.total || 0} total</span>
+            </div>
+            <form method="get" className="admin-panel__head admin-filter-bar">
               <input type="hidden" name="tab" value="orders" />
               <label className="field">Search orders<input className="input" type="search" name="q" defaultValue={searchParams.q || ''} placeholder="Order number or email" /></label>
               <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option>{['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].map((status) => <option key={status}>{status}</option>)}</select></label>
@@ -129,17 +112,36 @@ export default async function Page({ searchParams }) {
 
         {tab === 'products' && (
           <article className="admin-panel">
-            <div className="admin-panel__head"><h2>Catalog</h2><span>{products?.total || 0} products <Link className="btn btn--ghost" href="/admin/products/new">Add product</Link></span></div>
+            <div className="admin-catalog-head">
+              <div className="admin-catalog-head__title">
+                <span className="admin-catalog-head__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10" /></svg>
+                </span>
+                <div><h2>Catalog</h2><p>Manage your products and inventory</p></div>
+              </div>
+              <div className="admin-catalog-head__actions">
+                <span>{products?.total || 0} products</span>
+                <Link className="btn admin-primary-button" href="/admin/products/new"><span aria-hidden="true">+</span> Add product</Link>
+              </div>
+            </div>
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead><tr><th>Product</th><th>Brand</th><th>Status</th><th>Stock</th><th>Updated</th><th>Manage</th></tr></thead>
                 <tbody>
                   {(products?.items || []).map((product) => {
                     const stock = (product.variants || []).reduce((sum, variant) => sum + (variant.inventory?.quantity || 0), 0);
+                    const image = (product.product_images || []).slice().sort((a, b) => a.position - b.position)[0]?.url;
                     return (
                       <tr key={product.id}>
-                        <td><strong>{product.title}</strong><small>{product.slug}</small></td>
-                        <td>{product.brand}</td>
+                        <td className="admin-product-cell">
+                          <div className="admin-product-cell__inner">
+                            <span className="admin-product-thumb">
+                              {image ? <img src={image} alt="" /> : <span aria-hidden="true">V</span>}
+                            </span>
+                            <span><strong>{product.title}</strong><small>{product.slug}</small></span>
+                          </div>
+                        </td>
+                        <td><em>{product.brand}</em></td>
                         <td><StatusBadge value={product.status} /></td>
                         <td>{stock}</td>
                         <td>{date(product.updatedAt)}</td>
@@ -163,7 +165,7 @@ export default async function Page({ searchParams }) {
         {tab === 'customers' && (
           <article className="admin-panel">
             <div className="admin-panel__head"><h2>Customer accounts</h2><span>{customers?.total || 0} total</span></div>
-            <form method="get" className="admin-panel__head">
+            <form method="get" className="admin-panel__head admin-filter-bar">
               <input type="hidden" name="tab" value="customers" />
               <label className="field">Search customers<input className="input" type="search" name="q" defaultValue={searchParams.q || ''} placeholder="Name or email" /></label>
               <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option><option>ACTIVE</option><option>DISABLED</option></select></label>
@@ -190,7 +192,7 @@ export default async function Page({ searchParams }) {
         {tab === 'reviews' && (
           <article className="admin-panel stack">
             <div className="admin-panel__head"><h2>Review moderation</h2></div>
-            <form method="get" className="admin-panel__head">
+            <form method="get" className="admin-panel__head admin-filter-bar">
               <input type="hidden" name="tab" value="reviews" />
               <label className="field">Status<select className="input" name="status" defaultValue={searchParams.status || ''}><option value="">All statuses</option>{['PENDING', 'APPROVED', 'REJECTED'].map((status) => <option key={status}>{status}</option>)}</select></label>
               <button className="btn btn--ghost" type="submit">Filter</button>
@@ -250,8 +252,7 @@ export default async function Page({ searchParams }) {
             </div>
           </article>
         )}
-      </section>
-    </main>
+      </main>
   );
 }
 
@@ -281,9 +282,18 @@ function OrderTable({ items, compact = false }) {
               </form></td>}
             </tr>
           ))}
-          {!items.length && <tr><td colSpan={compact ? 5 : 6} className="admin-empty">No orders yet.</td></tr>}
+          {!items.length && compact && <tr><td colSpan={5} className="admin-empty">No orders yet.</td></tr>}
         </tbody>
       </table>
+      {!items.length && !compact && (
+        <div className="admin-empty-state">
+          <svg aria-hidden="true" viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 19h36l4 9v18H6V28l4-9ZM10 19l4-10h28l4 10M6 28h13l4 5h10l4-5h13M20 17h16" />
+          </svg>
+          <strong>No orders yet.</strong>
+          <p>Orders will appear here once customers make a purchase.</p>
+        </div>
+      )}
     </div>
   );
 }
