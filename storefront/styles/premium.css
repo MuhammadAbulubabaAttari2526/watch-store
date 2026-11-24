@@ -674,3 +674,49 @@ body.admin-ui {
   .admin-topbar .admin-primary-button, .admin-topbar .admin-store-link { width: 100%; }
   .admin-catalog-head__actions .admin-primary-button { flex-basis: 100%; }
 }
+
+@media (max-width: 47.99em) {
+  .hero {
+    min-height: 0;
+    justify-content: flex-start;
+    padding-bottom: .5rem;
+  }
+  .hero__grid {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: .45rem;
+    padding-block: clamp(2.35rem, 10vw, 3.2rem) 1rem;
+  }
+  .hero__copy { width: 100%; max-width: 32rem; }
+  .hero__copy .hero__eyebrow {
+    max-width: 100%;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin-bottom: .9rem;
+    font-size: .64rem;
+    letter-spacing: .18em;
+  }
+  .hero__copy h1 {
+    max-width: 9ch;
+    margin-bottom: .9rem;
+    font-size: clamp(2.7rem, 11.8vw, 4.15rem);
+    letter-spacing: -.025em;
+    line-height: .94;
+    text-wrap: balance;
+  }
+  .hero__copy p:not(.hero__eyebrow) {
+    max-width: 29ch;
+    margin-bottom: .8rem;
+    font-size: clamp(.96rem, 4vw, 1.08rem);
+    line-height: 1.5;
+  }
+  .hero__cta { min-height: 3.15rem; margin-top: .25rem; padding-inline: 1.2rem; font-size: .68rem; }
+  .dial { width: clamp(12rem, 60vw, 18rem); justify-self: end; margin: .2rem .1rem -.35rem 0; }
+  .hero > .container:last-child { width: 100%; padding-bottom: .65rem; }
+}
+
+@media (max-width: 23.99em) {
+  .hero__copy h1 { font-size: 2.6rem; }
+  .hero__cta { min-height: 3rem; gap: .65rem; padding-inline: .95rem; letter-spacing: .07em; }
+  .dial { width: min(60vw, 13.5rem); }
+}
