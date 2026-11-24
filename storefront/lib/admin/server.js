@@ -100,7 +100,24 @@ export async function adminApi(method, path, options = {}) {
   if (path === '/api/admin/analytics/overview') {
     const { data, error } = await supabase.rpc('admin_overview');
     if (error) throw new Error(`Could not load dashboard analytics: ${error.message}`);
-    return data;
+    const skus = [...new Set((data.lowStock || []).slice(0, 8).map((item) => item.variant?.sku).filter(Boolean))];
+    if (!skus.length) return data;
+    const { data: variants, error: imageError } = await supabase
+      .from('product_variants')
+      .select('sku,product:products(product_images(url,position))')
+      .in('sku', skus);
+    if (imageError) throw new Error(`Could not load low-stock product images: ${imageError.message}`);
+    const imageBySku = new Map((variants || []).map((variant) => {
+      const image = (variant.product?.product_images || []).slice().sort((a, b) => a.position - b.position)[0]?.url;
+      return [variant.sku, image];
+    }));
+    return {
+      ...data,
+      lowStock: data.lowStock.map((item) => ({
+        ...item,
+        image: imageBySku.get(item.variant?.sku) || null,
+      })),
+    };
   }
 
   if (path === '/api/admin/orders') {

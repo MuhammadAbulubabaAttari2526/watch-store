@@ -65,24 +65,49 @@ export default async function Page({ searchParams }) {
         {tab === 'overview' && (
           <>
             <div className="admin-metrics">
-              <article><span>Revenue</span><strong>{overview.totalRevenueByCurrency?.length
-                ? overview.totalRevenueByCurrency.map(({ currency, total }) => money(total, currency)).join(' · ')
-                : money(0)}</strong><small>{overview.completedOrders} completed orders</small></article>
-              <article><span>Orders</span><strong>{overview.totalOrders}</strong><small>{overview.pendingOrders} pending</small></article>
-              <article><span>Customers</span><strong>{overview.totalCustomers}</strong><small>Registered accounts</small></article>
-              <article><span>Products</span><strong>{overview.totalProducts}</strong><small>{overview.lowStock?.length || 0} low stock</small></article>
+              <MetricCard
+                icon="revenue"
+                label="Revenue"
+                value={overview.totalRevenueByCurrency?.length
+                  ? overview.totalRevenueByCurrency.map(({ currency, total }) => money(total, currency)).join(' · ')
+                  : money(0)}
+                note={`${overview.completedOrders} completed orders`}
+              />
+              <MetricCard icon="orders" label="Orders" value={overview.totalOrders} note={`${overview.pendingOrders} pending`} />
+              <MetricCard icon="customers" label="Customers" value={overview.totalCustomers} note="Registered accounts" />
+              <MetricCard icon="products" label="Products" value={overview.totalProducts} note={`${overview.lowStock?.length || 0} low stock`} />
             </div>
             <div className="admin-grid">
               <article className="admin-panel">
-                <div className="admin-panel__head"><h2>Recent orders</h2><Link href="/admin?tab=orders">View all</Link></div>
+                <div className="admin-panel__head">
+                  <div className="admin-section-heading">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8M3 3v5h5M12 7v5l3 2" /></svg>
+                    <h2>Recent orders</h2>
+                  </div>
+                  <Link className="admin-view-all" href="/admin?tab=orders">View all <span aria-hidden="true">→</span></Link>
+                </div>
                 <OrderTable items={overview.recentOrders || []} compact />
               </article>
               <article className="admin-panel">
-                <div className="admin-panel__head"><h2>Low stock</h2></div>
+                <div className="admin-panel__head">
+                  <div className="admin-section-heading">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3 10 18H2L12 3ZM12 9v5M12 18h.01" /></svg>
+                    <h2>Low stock</h2>
+                  </div>
+                </div>
                 {(overview.lowStock || []).length ? (
                   <ul className="admin-stock">
                     {(overview.lowStock || []).slice(0, 8).map((item) => (
-                      <li key={item.id}><div><strong>{item.variant?.product?.title || 'Product'}</strong><span>{item.variant?.sku}</span></div><b>{item.quantity} left</b></li>
+                      <li key={item.id}>
+                        <span className="admin-stock__image">
+                          {item.image ? <img src={item.image} alt="" /> : <span aria-hidden="true">V</span>}
+                        </span>
+                        <div className="admin-stock__details">
+                          <strong>{item.variant?.product?.title || 'Product'}</strong>
+                          <span>{item.variant?.sku}</span>
+                        </div>
+                        <b>{item.quantity} left</b>
+                      </li>
                     ))}
                   </ul>
                 ) : <p className="admin-empty">All products are adequately stocked.</p>}
@@ -260,6 +285,28 @@ function StatusBadge({ value }) {
   return <span className={`admin-status admin-status--${String(value).toLowerCase()}`}>{value}</span>;
 }
 
+function MetricCard({ icon, label, value, note }) {
+  const paths = {
+    revenue: 'M3 7h18l-2 11H5L3 7ZM3 7 2 4H1M8 11h.01M16 11h.01M8 21h.01M17 21h.01',
+    orders: 'M6 3h9l4 4v14H6zM15 3v5h5M9 12h7M9 16h7',
+    customers: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11a4 4 0 0 0 0-8M18 15a4 4 0 0 1 4 4v2',
+    products: 'm12 2 9 5-9 5-9-5 9-5ZM3 7v10l9 5 9-5V7M12 12v10',
+  };
+  return (
+    <article className="admin-metric">
+      <div className="admin-metric__top">
+        <span className="admin-metric__icon">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[icon]} /></svg>
+        </span>
+        <span className="admin-metric__label">{label}</span>
+        <svg className="admin-metric__trend" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19v-5M10 19V9M16 19V5M22 19V2" /></svg>
+      </div>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </article>
+  );
+}
+
 function OrderTable({ items, compact = false }) {
   return (
     <div className="admin-table-wrap">
@@ -282,11 +329,10 @@ function OrderTable({ items, compact = false }) {
               </form></td>}
             </tr>
           ))}
-          {!items.length && compact && <tr><td colSpan={5} className="admin-empty">No orders yet.</td></tr>}
         </tbody>
       </table>
-      {!items.length && !compact && (
-        <div className="admin-empty-state">
+      {!items.length && (
+        <div className={`admin-empty-state${compact ? ' admin-empty-state--compact' : ''}`}>
           <svg aria-hidden="true" viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 19h36l4 9v18H6V28l4-9ZM10 19l4-10h28l4 10M6 28h13l4 5h10l4-5h13M20 17h16" />
           </svg>

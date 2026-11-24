@@ -512,12 +512,12 @@ body.admin-ui main#main {
   text-transform: uppercase;
 }
 
-.admin-globalbar > p span {
+.admin-globalbar__left > p span {
   color: #fff;
   font-weight: 700;
 }
 
-.admin-globalbar > p i {
+.admin-globalbar__left > p i {
   color: #667182;
   font-style: normal;
 }
@@ -659,7 +659,6 @@ body.admin-ui main#main {
   color: #9c8050;
 }
 
-.admin-store-link:hover,
 .admin-primary-button:hover {
   background: #252c37;
   color: #fff;
@@ -706,12 +705,40 @@ body.admin-ui main#main {
 }
 
 .admin-metrics article {
+  min-height: 9.5rem;
   display: grid;
-  gap: .4rem;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: .9rem;
+  row-gap: .2rem;
   padding: 1.25rem;
 }
 
-.admin-metrics article span {
+.admin-metric__top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  margin-bottom: .15rem;
+}
+
+.admin-metric__icon {
+  width: 3.8rem;
+  height: 3.8rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff1d2;
+  color: #25231e;
+}
+
+.admin-metric__icon svg {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+.admin-metric__label {
   color: #697180;
   font-size: .72rem;
   font-weight: 700;
@@ -719,7 +746,15 @@ body.admin-ui main#main {
   letter-spacing: .09em;
 }
 
+.admin-metric__trend {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: auto;
+  color: #bb8b37;
+}
+
 .admin-metrics article strong {
+  grid-column: 2;
   color: #151a22;
   font-family: var(--font-display);
   font-size: clamp(1.55rem, 2vw, 2.1rem);
@@ -727,12 +762,14 @@ body.admin-ui main#main {
 }
 
 .admin-metrics article small {
+  grid-column: 2;
   color: #717a88;
 }
 
 .admin-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.75fr) minmax(16rem, .75fr);
+  align-items: start;
   gap: 1rem;
 }
 
@@ -749,9 +786,9 @@ body.admin-ui main#main {
 .admin-panel__head h2 {
   margin: 0;
   color: #171c24;
-  font-family: var(--font-body);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
 }
 
 .admin-panel__head a,
@@ -763,6 +800,22 @@ body.admin-ui main#main {
 
 .admin-panel__head > span {
   color: #927747;
+}
+
+.admin-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: #96743a !important;
+  font-size: .9rem !important;
+  font-weight: 700;
+  text-decoration: underline !important;
+  text-underline-offset: .25rem;
+}
+
+.admin-view-all span {
+  font-size: 1.2rem;
+  text-decoration: none;
 }
 
 .admin-section-heading {
@@ -1026,17 +1079,37 @@ body.admin-ui main#main {
 }
 
 .admin-stock li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 5.3rem minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: .8rem 1.25rem;
+  gap: .85rem;
+  padding: .75rem 1rem;
   border-bottom: 1px solid #e8ebf0;
 }
 
-.admin-stock li div {
+.admin-stock__image {
+  width: 5.3rem;
+  height: 5.3rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: .75rem;
+  background: #eff0f2;
+  color: #927747;
+  font-family: var(--font-display);
+  font-size: 2rem;
+}
+
+.admin-stock__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-stock li .admin-stock__details {
   min-width: 0;
   display: grid;
+  gap: .2rem;
 }
 
 .admin-stock li strong {
@@ -1046,14 +1119,18 @@ body.admin-ui main#main {
   font-size: .825rem;
 }
 
-.admin-stock li span,
+.admin-stock__details > span,
 .admin-stock li b {
   color: #697385;
   font-size: .72rem;
 }
 
 .admin-stock li b {
-  color: #9a4545;
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  background: #fff0ef;
+  color: #b62d2d;
+  font-size: .85rem;
   white-space: nowrap;
 }
 
@@ -1071,6 +1148,10 @@ body.admin-ui main#main {
   gap: .45rem;
   padding: 1.5rem;
   text-align: center;
+}
+
+.admin-empty-state--compact {
+  min-height: 11.5rem;
 }
 
 .admin-empty-state svg {
@@ -1169,6 +1250,12 @@ body.admin-ui main#main {
   .admin-metrics { gap: .6rem; }
   .admin-metrics article { padding: .9rem; }
   .admin-metrics article strong { font-size: 1.25rem; }
+  .admin-metrics article { grid-template-columns: 2.7rem minmax(0, 1fr); column-gap: .6rem; }
+  .admin-metric__top { gap: .5rem; }
+  .admin-metric__icon { width: 2.7rem; height: 2.7rem; }
+  .admin-metric__icon svg { width: 1.4rem; height: 1.4rem; }
+  .admin-metric__label { font-size: .62rem; }
+  .admin-metric__trend { width: .85rem; height: .85rem; }
   .admin-table th,
   .admin-table td { padding: .7rem; }
 }
