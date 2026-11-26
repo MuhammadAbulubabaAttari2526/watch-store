@@ -79,8 +79,11 @@ export default function CheckoutForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Enter a valid email address.';
     if (!normalizePkPhone(f.phone)) e.phone = 'Enter a Pakistani number, for example 0300 1234567.';
     if (f.address.trim().length < 6) e.address = 'Enter your full delivery address.';
+    else if (f.address.trim().length > 255) e.address = 'Address must be 255 characters or fewer.';
     if (f.city.trim().length < 2) e.city = 'Enter your city.';
+    else if (f.city.trim().length > 100) e.city = 'City must be 100 characters or fewer.';
     if (f.postal && !/^\d{5}$/.test(f.postal.trim())) e.postal = 'Postal codes in Pakistan have 5 digits.';
+    if (f.notes.length > 1000) e.notes = 'Order notes must be 1000 characters or fewer.';
     if (!shipId) e.ship = 'Choose a delivery method.';
     setErrs(e);
     return Object.keys(e).length === 0;
@@ -161,13 +164,13 @@ export default function CheckoutForm() {
         </fieldset>
 
         <fieldset className="box"><legend>Delivery address</legend>
-          {field('address', 'Address', { autoComplete: 'street-address' })}
+          {field('address', 'Address', { autoComplete: 'street-address', maxLength: 255 })}
           <div className="two">
-            {field('city', 'City', { list: 'pk-cities', autoComplete: 'address-level2' })}
-            {field('postal', 'Postal code (optional)', { inputMode: 'numeric', autoComplete: 'postal-code' })}
+            {field('city', 'City', { list: 'pk-cities', autoComplete: 'address-level2', maxLength: 100 })}
+            {field('postal', 'Postal code (optional)', { inputMode: 'numeric', autoComplete: 'postal-code', maxLength: 20 })}
           </div>
           <datalist id="pk-cities">{PK_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-          <div className="field"><label htmlFor="c-notes">Order notes (optional)</label><textarea id="c-notes" className="input" value={f.notes} onChange={set('notes')} /></div>
+          <div className={'field' + (errs.notes ? ' has-error' : '')}><label htmlFor="c-notes">Order notes (optional)</label><textarea id="c-notes" className="input" value={f.notes} onChange={set('notes')} maxLength={1000} aria-invalid={!!errs.notes} aria-describedby="e-notes" /><span className="field__error" id="e-notes" role="alert">{errs.notes}</span></div>
         </fieldset>
 
         <fieldset className="box"><legend>Delivery method</legend>

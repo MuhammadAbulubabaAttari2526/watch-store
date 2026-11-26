@@ -65,6 +65,7 @@ export async function changeAdminPasswordAction(_prev, fd) {
 }
 
 export async function updateOrderStatusAction(_prev, fd) {
+  await requireAdmin();
   const id = text(fd, 'id');
   const status = text(fd, 'status');
   if (!id || !ORDER_STATUSES.has(status)) return { error: 'Choose a valid order status.' };
@@ -80,6 +81,7 @@ export async function updateOrderStatusAction(_prev, fd) {
 }
 
 export async function updatePaymentStatusAction(_prev, fd) {
+  await requireAdmin();
   const id = text(fd, 'id');
   const status = text(fd, 'status');
   if (!id || !PAYMENT_STATUSES.has(status)) return { error: 'Choose a valid payment status.' };
@@ -129,13 +131,25 @@ export async function updateReviewStatusAction(_prev, fd) {
 }
 
 export async function updateProductStatusAction(_prev, fd) {
+  await requireAdmin();
   const id = text(fd, 'id');
   const status = text(fd, 'status');
   if (!id || !PRODUCT_STATUSES.has(status)) return { error: 'Choose a valid product status.' };
-  const { error } = await getSupabaseServer().from('products')
-    .update({ status, published_at: status === 'PUBLISHED' ? new Date().toISOString() : null })
-    .eq('id', id);
+  const supabase = getSupabaseServer();
+  const { data: currentProduct, error: readError } = await supabase.from('products')
+    .select('published_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (readError) return { error: `Could not load product status: ${readError.message}` };
+  if (!currentProduct) return { error: 'Product not found or could not be updated.' };
+  const publishedAt = currentProduct.published_at || (status === 'PUBLISHED' ? new Date().toISOString() : null);
+  const { data, error } = await supabase.from('products')
+    .update({ status, published_at: publishedAt })
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
   if (error) return { error: `Could not update product status: ${error.message}` };
+  if (!data) return { error: 'Product not found or could not be updated.' };
   revalidatePath('/admin');
   revalidatePath('/products');
   revalidatePath('/');
@@ -157,34 +171,49 @@ export async function saveProductAction(product) {
   if (error) return { error: `Could not save product: ${error.message}` };
   const retained = new Set((product.images || []).map((image) => image.url));
   const removedPaths = oldImages.filter((url) => !retained.has(url)).map(storagePath).filter(Boolean);
+  let cleanupWarning = '';
   if (removedPaths.length) {
-    const { error: storageError } = await supabase.storage.from('product-images').remove(removedPaths);
-    if (storageError) return { error: `Product saved, but removed image files could not be deleted: ${storageError.message}` };
+    try {
+      const { error: storageError } = await supabase.storage.from('product-images').remove(removedPaths);
+      if (storageError) cleanupWarning = `Product saved, but removed image files could not be deleted: ${storageError.message}`;
+    } catch (storageError) {
+      cleanupWarning = `Product saved, but removed image files could not be deleted: ${storageError.message}`;
+    }
   }
   revalidatePath('/admin');
   revalidatePath('/products');
-  return { id: data };
+  if (cleanupWarning) console.error(cleanupWarning);
+  return { id: data, warning: cleanupWarning || undefined };
 }
 
 export async function deleteProductAction(fd) {
+  await requireAdmin();
   const id = text(fd, 'id');
   if (!id) return { error: 'Product ID is required.' };
   const supabase = getSupabaseServer();
   const { data: images, error: imageError } = await supabase.from('product_images').select('url').eq('product_id', id);
   if (imageError) return { error: `Could not load product images: ${imageError.message}` };
-  const { error } = await supabase.from('products').delete().eq('id', id);
+  const { data: deleted, error } = await supabase.from('products').delete().eq('id', id).select('id').maybeSingle();
   if (error) return { error: `Could not delete product: ${error.message}` };
+  if (!deleted) return { error: 'Product not found or could not be deleted.' };
   const paths = (images || []).map((image) => storagePath(image.url)).filter(Boolean);
+  let cleanupWarning = '';
   if (paths.length) {
-    const { error: storageError } = await supabase.storage.from('product-images').remove(paths);
-    if (storageError) return { error: `Product deleted, but image files could not be removed: ${storageError.message}` };
+    try {
+      const { error: storageError } = await supabase.storage.from('product-images').remove(paths);
+      if (storageError) cleanupWarning = `Product deleted, but image files could not be removed: ${storageError.message}`;
+    } catch (storageError) {
+      cleanupWarning = `Product deleted, but image files could not be removed: ${storageError.message}`;
+    }
   }
   revalidatePath('/admin');
   revalidatePath('/products');
-  return { ok: true };
+  if (cleanupWarning) console.error(cleanupWarning);
+  return { ok: true, warning: cleanupWarning || undefined };
 }
 
 export async function adjustInventoryAction(fd) {
+  await requireAdmin();
   const variantId = text(fd, 'variant_id');
   const deltaText = text(fd, 'delta');
   const delta = Number(deltaText);
@@ -229,7 +258,7 @@ export async function saveStoreSettingsAction(_prev, fd) {
     if (['_url', '_logo_url'].some((suffix) => key.endsWith(suffix)) && raw) {
       try {
         const url = new URL(raw);
-        if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+        if (!/^https:\/\//i.test(raw) || url.protocol !== 'https:' || !url.hostname) throw new Error();
       } catch {
         return { message: `Enter a valid HTTPS URL for ${key.replaceAll('_', ' ')}.` };
       }
@@ -248,14 +277,20 @@ export async function saveStoreSettingsAction(_prev, fd) {
   if (error) return { message: `Could not save store settings: ${error.message}` };
   const previousLogoPath = storagePath(currentLogo?.value, 'store-assets');
   const nextLogoPath = storagePath(text(fd, 'store_logo_url'), 'store-assets');
+  let cleanupWarning = '';
   if (previousLogoPath && previousLogoPath !== nextLogoPath) {
-    const { error: storageError } = await supabase.storage.from('store-assets').remove([previousLogoPath]);
-    if (storageError) return { message: `Settings saved, but the previous logo could not be deleted: ${storageError.message}` };
+    try {
+      const { error: storageError } = await supabase.storage.from('store-assets').remove([previousLogoPath]);
+      if (storageError) cleanupWarning = `The previous logo could not be deleted: ${storageError.message}`;
+    } catch (storageError) {
+      cleanupWarning = `The previous logo could not be deleted: ${storageError.message}`;
+    }
   }
   revalidatePath('/');
   revalidatePath('/checkout');
   revalidatePath('/admin');
-  return { ok: 'Store settings saved.' };
+  if (cleanupWarning) console.error(`Store settings saved. ${cleanupWarning}`);
+  return { ok: cleanupWarning ? `Store settings saved. ${cleanupWarning}` : 'Store settings saved.' };
 }
 
 export async function saveBannerAction(_prev, fd) {
@@ -267,7 +302,19 @@ export async function saveBannerAction(_prev, fd) {
   const position = Number(text(fd, 'position') || 0);
   if (title.length < 2 || !Number.isInteger(position) || position < 0) return { message: 'Enter a banner title and valid display order.' };
   if (!storagePath(imageUrl, 'store-assets')) return { message: 'Upload a banner image to Store Assets first.' };
-  if (linkUrl && !linkUrl.startsWith('/') && !/^https:\/\//i.test(linkUrl)) return { message: 'Banner links must be relative paths or HTTPS URLs.' };
+  if (linkUrl) {
+    const isRelativePath = /^\/(?![\\/])/.test(linkUrl) && !/[\\\u0000-\u001f\u007f]/.test(linkUrl);
+    let isHttpsUrl = false;
+    if (/^https:\/\//i.test(linkUrl)) {
+      try {
+        const url = new URL(linkUrl);
+        isHttpsUrl = url.protocol === 'https:' && Boolean(url.hostname);
+      } catch {
+        isHttpsUrl = false;
+      }
+    }
+    if (!isRelativePath && !isHttpsUrl) return { message: 'Banner links must be relative paths or HTTPS URLs.' };
+  }
   const supabase = getSupabaseServer();
   const row = {
     title,
@@ -297,13 +344,19 @@ export async function deleteBannerAction(_prev, fd) {
   const { error } = await supabase.from('banners').delete().eq('id', id);
   if (error) return { error: `Could not delete banner: ${error.message}` };
   const path = storagePath(banner?.image_url, 'store-assets');
+  let cleanupWarning = '';
   if (path) {
-    const { error: storageError } = await supabase.storage.from('store-assets').remove([path]);
-    if (storageError) return { error: `Banner deleted, but its image could not be removed: ${storageError.message}` };
+    try {
+      const { error: storageError } = await supabase.storage.from('store-assets').remove([path]);
+      if (storageError) cleanupWarning = `Banner deleted, but its image could not be removed: ${storageError.message}`;
+    } catch (storageError) {
+      cleanupWarning = `Banner deleted, but its image could not be removed: ${storageError.message}`;
+    }
   }
   revalidatePath('/');
   revalidatePath('/admin');
-  return { ok: 'Banner deleted.' };
+  if (cleanupWarning) console.error(cleanupWarning);
+  return { ok: cleanupWarning || 'Banner deleted.' };
 }
 
 export async function saveTaxonomyAction(_prev, fd) {

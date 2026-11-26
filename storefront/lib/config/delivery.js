@@ -14,7 +14,6 @@ export const etaFor = (city) => {
   return hit ? ETA[hit] : ETA_DEFAULT;
 };
 
-// Same convention as the backend: an option NAME containing a city is only for that city.
 export const restrictedCity = (name) => PK_CITIES.find((c) => (name || '').toLowerCase().includes(c.toLowerCase())) || null;
 
 export function optionsForCity(options, city) {
